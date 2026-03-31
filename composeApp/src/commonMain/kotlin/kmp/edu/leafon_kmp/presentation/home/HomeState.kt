@@ -1,7 +1,7 @@
 package kmp.edu.leafon_kmp.presentation.home
 
+import kmp.edu.leafon_kmp.presentation.components.layout.SidebarDestination
 import kmp.edu.leafon_kmp.presentation.home.components.ChartRange
-import kmp.edu.leafon_kmp.presentation.home.components.SidebarDestination
 import kmp.edu.leafon_kmp.presentation.home.model.DashboardUiState
 import kmp.edu.leafon_kmp.presentation.home.model.dashboardPreviewState
 

@@ -3,7 +3,7 @@ package kmp.edu.leafon_kmp.presentation.home
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import kmp.edu.leafon_kmp.presentation.home.components.SidebarDestination
+import kmp.edu.leafon_kmp.presentation.components.layout.SidebarDestination
 import kmp.edu.leafon_kmp.presentation.home.model.dashboardPreviewState
 
 class HomeViewModel {

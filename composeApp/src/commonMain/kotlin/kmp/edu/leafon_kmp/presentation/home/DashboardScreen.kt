@@ -21,11 +21,16 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import kmp.edu.leafon_kmp.presentation.components.layout.AppSidebar
+import kmp.edu.leafon_kmp.presentation.components.layout.AppTopBar
+import kmp.edu.leafon_kmp.presentation.components.layout.AppTopBarState
+import kmp.edu.leafon_kmp.presentation.components.layout.SidebarDestination
 import kmp.edu.leafon_kmp.presentation.home.components.AlertListCard
 import kmp.edu.leafon_kmp.presentation.home.components.AutomationSummaryCard
 import kmp.edu.leafon_kmp.presentation.home.components.ChartRange
@@ -33,15 +38,15 @@ import kmp.edu.leafon_kmp.presentation.home.components.HumidityChartCard
 import kmp.edu.leafon_kmp.presentation.home.components.IrrigationListCard
 import kmp.edu.leafon_kmp.presentation.home.components.MetricCard
 import kmp.edu.leafon_kmp.presentation.home.components.PlantHeroCard
-import kmp.edu.leafon_kmp.presentation.home.components.Sidebar
-import kmp.edu.leafon_kmp.presentation.home.components.SidebarDestination
-import kmp.edu.leafon_kmp.presentation.home.components.TopBar
-import kmp.edu.leafon_kmp.presentation.home.ui.LeafOnColors
+import kmp.edu.leafon_kmp.presentation.components.global.LeafOnColors
+import kmp.edu.leafon_kmp.presentation.profile.ProfileScreen
+import kmp.edu.leafon_kmp.presentation.profile.ProfileViewModel
 
 @Composable
 fun DashboardScreen(
     state: HomeState,
     onAction: (HomeAction) -> Unit = {},
+    onLoggedOut: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     BoxWithConstraints(
@@ -55,11 +60,13 @@ fun DashboardScreen(
             CompactDashboardLayout(
                 state = state,
                 onAction = onAction,
+                onLoggedOut = onLoggedOut,
             )
         } else {
             ExpandedDashboardLayout(
                 state = state,
                 onAction = onAction,
+                onLoggedOut = onLoggedOut,
             )
         }
     }
@@ -69,9 +76,17 @@ fun DashboardScreen(
 private fun ExpandedDashboardLayout(
     state: HomeState,
     onAction: (HomeAction) -> Unit,
+    onLoggedOut: () -> Unit,
 ) {
+    val topBarState = AppTopBarState(
+        title = "Dashboard",
+        subject = state.dashboard.plantStatus.name,
+        subjectOnline = state.dashboard.plantStatus.deviceOnline,
+        lastUpdateLabel = "Last update: ${state.dashboard.plantStatus.lastUpdate}",
+    )
+
     Row(modifier = Modifier.fillMaxSize()) {
-        Sidebar(
+        AppSidebar(
             selectedDestination = state.selectedDestination,
             onHomeClick = {
                 onAction(HomeAction.OnSidebarDestinationSelected(SidebarDestination.HOME))
@@ -98,15 +113,18 @@ private fun ExpandedDashboardLayout(
         )
 
         Column(modifier = Modifier.fillMaxSize()) {
-            TopBar(
-                plantStatus = state.dashboard.plantStatus,
-                onNotificationsClick = { onAction(HomeAction.OnNotificationsClick) },
-                onProfileClick = { onAction(HomeAction.OnProfileClick) },
-            )
+            if (state.selectedDestination != SidebarDestination.PROFILE) {
+                AppTopBar(
+                    state = topBarState,
+                    onNotificationsClick = { onAction(HomeAction.OnNotificationsClick) },
+                    onProfileClick = { onAction(HomeAction.OnProfileClick) },
+                )
+            }
 
             DashboardContent(
                 state = state,
                 onAction = onAction,
+                onLoggedOut = onLoggedOut,
                 isCompact = false,
                 modifier = Modifier.weight(1f),
             )
@@ -118,16 +136,26 @@ private fun ExpandedDashboardLayout(
 private fun CompactDashboardLayout(
     state: HomeState,
     onAction: (HomeAction) -> Unit,
+    onLoggedOut: () -> Unit,
 ) {
-    Column(modifier = Modifier.fillMaxSize()) {
-        TopBar(
-            plantStatus = state.dashboard.plantStatus,
-            onNotificationsClick = { onAction(HomeAction.OnNotificationsClick) },
-            onProfileClick = { onAction(HomeAction.OnProfileClick) },
-            compact = true,
-        )
+    val topBarState = AppTopBarState(
+        title = "Dashboard",
+        subject = state.dashboard.plantStatus.name,
+        subjectOnline = state.dashboard.plantStatus.deviceOnline,
+        lastUpdateLabel = "Last update: ${state.dashboard.plantStatus.lastUpdate}",
+    )
 
-        Sidebar(
+    Column(modifier = Modifier.fillMaxSize()) {
+        if (state.selectedDestination != SidebarDestination.PROFILE) {
+            AppTopBar(
+                state = topBarState,
+                onNotificationsClick = { onAction(HomeAction.OnNotificationsClick) },
+                onProfileClick = { onAction(HomeAction.OnProfileClick) },
+                compact = true,
+            )
+        }
+
+        AppSidebar(
             selectedDestination = state.selectedDestination,
             onHomeClick = {
                 onAction(HomeAction.OnSidebarDestinationSelected(SidebarDestination.HOME))
@@ -150,6 +178,7 @@ private fun CompactDashboardLayout(
         DashboardContent(
             state = state,
             onAction = onAction,
+            onLoggedOut = onLoggedOut,
             isCompact = true,
             modifier = Modifier.weight(1f),
         )
@@ -160,9 +189,21 @@ private fun CompactDashboardLayout(
 private fun DashboardContent(
     state: HomeState,
     onAction: (HomeAction) -> Unit,
+    onLoggedOut: () -> Unit,
     isCompact: Boolean,
     modifier: Modifier = Modifier,
 ) {
+    val profileViewModel = remember { ProfileViewModel() }
+
+    if (state.selectedDestination == SidebarDestination.PROFILE) {
+        ProfileScreen(
+            viewModel = profileViewModel,
+            onLoggedOut = onLoggedOut,
+            modifier = modifier,
+        )
+        return
+    }
+
     Box(modifier = modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
@@ -328,3 +369,4 @@ private fun DashboardErrorState(
         }
     }
 }
+

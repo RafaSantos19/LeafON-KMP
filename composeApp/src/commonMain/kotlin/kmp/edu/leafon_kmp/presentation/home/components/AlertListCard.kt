@@ -13,7 +13,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kmp.edu.leafon_kmp.presentation.home.model.AlertLevel
 import kmp.edu.leafon_kmp.presentation.home.model.AlertUi
-import kmp.edu.leafon_kmp.presentation.home.ui.LeafOnColors
+import kmp.edu.leafon_kmp.presentation.components.global.LeafOnColors
 
 // ─────────────────────────────────────────────────────────────────────────────
 // AlertListCard.kt
@@ -124,3 +124,4 @@ private fun AlertLevelIndicator(level: AlertLevel) {
         )
     }
 }
+

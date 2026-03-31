@@ -1,7 +1,7 @@
 package kmp.edu.leafon_kmp.presentation.home
 
 import kmp.edu.leafon_kmp.presentation.home.components.ChartRange
-import kmp.edu.leafon_kmp.presentation.home.components.SidebarDestination
+import kmp.edu.leafon_kmp.presentation.components.layout.SidebarDestination
 
 sealed class HomeAction {
     data object OnWaterNowClick : HomeAction()

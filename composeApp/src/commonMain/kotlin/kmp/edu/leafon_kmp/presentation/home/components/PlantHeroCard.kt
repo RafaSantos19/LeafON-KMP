@@ -11,7 +11,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kmp.edu.leafon_kmp.presentation.home.model.PlantStatusUi
-import kmp.edu.leafon_kmp.presentation.home.ui.LeafOnColors
+import kmp.edu.leafon_kmp.presentation.components.global.LeafOnColors
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PlantHeroCard.kt
@@ -145,3 +145,4 @@ fun HealthBadge(status: String) {
         )
     }
 }
+

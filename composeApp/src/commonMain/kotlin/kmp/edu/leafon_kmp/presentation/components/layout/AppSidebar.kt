@@ -1,4 +1,4 @@
-package kmp.edu.leafon_kmp.presentation.home.components
+package kmp.edu.leafon_kmp.presentation.components.layout
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -24,12 +24,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kmp.edu.leafon_kmp.presentation.home.ui.LeafOnColors
+import kmp.edu.leafon_kmp.presentation.components.global.LeafOnColors
 
 enum class SidebarDestination { HOME, HISTORY, PLANT_AND_POT, ALERTS, PROFILE }
 
 @Composable
-fun Sidebar(
+fun AppSidebar(
     selectedDestination: SidebarDestination = SidebarDestination.HOME,
     onHomeClick: () -> Unit = {},
     onHistoryClick: () -> Unit = {},

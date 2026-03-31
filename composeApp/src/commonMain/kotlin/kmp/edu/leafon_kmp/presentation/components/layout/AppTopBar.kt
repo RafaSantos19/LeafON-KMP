@@ -1,4 +1,4 @@
-package kmp.edu.leafon_kmp.presentation.home.components
+package kmp.edu.leafon_kmp.presentation.components.layout
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -24,12 +24,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kmp.edu.leafon_kmp.presentation.home.model.PlantStatusUi
-import kmp.edu.leafon_kmp.presentation.home.ui.LeafOnColors
+import kmp.edu.leafon_kmp.presentation.components.global.LeafOnColors
+
+data class AppTopBarState(
+    val title: String = "",
+    val subject: String = "",
+    val subjectOnline: Boolean = false,
+    val lastUpdateLabel: String = "",
+)
 
 @Composable
-fun TopBar(
-    plantStatus: PlantStatusUi,
+fun AppTopBar(
+    state: AppTopBarState,
     onNotificationsClick: () -> Unit = {},
     onProfileClick: () -> Unit = {},
     compact: Boolean = false,
@@ -38,17 +44,17 @@ fun TopBar(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .background(LeafOnColors.BgMain)
+            .background(LeafOnColors.BgMain),
     ) {
         if (compact) {
             CompactTopBar(
-                plantStatus = plantStatus,
+                state = state,
                 onNotificationsClick = onNotificationsClick,
                 onProfileClick = onProfileClick,
             )
         } else {
             ExpandedTopBar(
-                plantStatus = plantStatus,
+                state = state,
                 onNotificationsClick = onNotificationsClick,
                 onProfileClick = onProfileClick,
             )
@@ -60,7 +66,7 @@ fun TopBar(
 
 @Composable
 private fun ExpandedTopBar(
-    plantStatus: PlantStatusUi,
+    state: AppTopBarState,
     onNotificationsClick: () -> Unit,
     onProfileClick: () -> Unit,
 ) {
@@ -72,7 +78,7 @@ private fun ExpandedTopBar(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = "Dashboard",
+            text = state.title,
             fontSize = 22.sp,
             fontWeight = FontWeight.Bold,
             color = LeafOnColors.TextPrimary,
@@ -80,18 +86,18 @@ private fun ExpandedTopBar(
 
         Spacer(Modifier.width(28.dp))
         Text(
-            text = plantStatus.name,
+            text = state.subject,
             fontSize = 16.sp,
             fontWeight = FontWeight.SemiBold,
             color = LeafOnColors.TextPrimary,
         )
 
         Spacer(Modifier.width(12.dp))
-        OnlineBadge(isOnline = plantStatus.deviceOnline)
+        OnlineBadge(isOnline = state.subjectOnline)
         Spacer(Modifier.width(12.dp))
 
         Text(
-            text = "Last update: ${plantStatus.lastUpdate}",
+            text = state.lastUpdateLabel,
             fontSize = 13.sp,
             color = LeafOnColors.TextSecondary,
         )
@@ -105,7 +111,7 @@ private fun ExpandedTopBar(
 
 @Composable
 private fun CompactTopBar(
-    plantStatus: PlantStatusUi,
+    state: AppTopBarState,
     onNotificationsClick: () -> Unit,
     onProfileClick: () -> Unit,
 ) {
@@ -120,7 +126,7 @@ private fun CompactTopBar(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "Dashboard",
+                text = state.title,
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold,
                 color = LeafOnColors.TextPrimary,
@@ -137,7 +143,7 @@ private fun CompactTopBar(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = plantStatus.name,
+                text = state.subject,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = LeafOnColors.TextPrimary,
@@ -145,11 +151,11 @@ private fun CompactTopBar(
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f),
             )
-            OnlineBadge(isOnline = plantStatus.deviceOnline)
+            OnlineBadge(isOnline = state.subjectOnline)
         }
 
         Text(
-            text = "Last update: ${plantStatus.lastUpdate}",
+            text = state.lastUpdateLabel,
             fontSize = 13.sp,
             color = LeafOnColors.TextSecondary,
         )

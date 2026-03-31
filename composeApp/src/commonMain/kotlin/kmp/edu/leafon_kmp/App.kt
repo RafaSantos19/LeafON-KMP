@@ -93,6 +93,13 @@ fun App() {
                 DashboardScreen(
                     state = homeViewModel.state,
                     onAction = homeViewModel::onAction,
+                    onLoggedOut = {
+                        navController.navigate(AppRoute.Login.route) {
+                            popUpTo(AppRoute.Home.route) {
+                                inclusive = true
+                            }
+                        }
+                    }
                 )
             }
         }

@@ -9,7 +9,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kmp.edu.leafon_kmp.presentation.home.model.AutomationSummaryUi
-import kmp.edu.leafon_kmp.presentation.home.ui.LeafOnColors
+import kmp.edu.leafon_kmp.presentation.components.global.LeafOnColors
 
 // ─────────────────────────────────────────────────────────────────────────────
 // AutomationSummaryCard.kt
@@ -84,3 +84,4 @@ private fun SummaryRow(
         )
     }
 }
+

@@ -41,11 +41,15 @@ import kmp.edu.leafon_kmp.presentation.home.components.PlantHeroCard
 import kmp.edu.leafon_kmp.presentation.components.global.LeafOnColors
 import kmp.edu.leafon_kmp.presentation.profile.ProfileScreen
 import kmp.edu.leafon_kmp.presentation.profile.ProfileViewModel
+import kmp.edu.leafon_kmp.presentation.pots.PotListAction
+import kmp.edu.leafon_kmp.presentation.pots.PotListContent
+import kmp.edu.leafon_kmp.presentation.pots.PotListViewModel
 
 @Composable
 fun DashboardScreen(
     state: HomeState,
     onAction: (HomeAction) -> Unit = {},
+    onPotsClick: (() -> Unit)? = null,
     onLoggedOut: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
@@ -60,12 +64,14 @@ fun DashboardScreen(
             CompactDashboardLayout(
                 state = state,
                 onAction = onAction,
+                onPotsClick = onPotsClick,
                 onLoggedOut = onLoggedOut,
             )
         } else {
             ExpandedDashboardLayout(
                 state = state,
                 onAction = onAction,
+                onPotsClick = onPotsClick,
                 onLoggedOut = onLoggedOut,
             )
         }
@@ -76,14 +82,10 @@ fun DashboardScreen(
 private fun ExpandedDashboardLayout(
     state: HomeState,
     onAction: (HomeAction) -> Unit,
+    onPotsClick: (() -> Unit)?,
     onLoggedOut: () -> Unit,
 ) {
-    val topBarState = AppTopBarState(
-        title = "Dashboard",
-        subject = state.dashboard.plantStatus.name,
-        subjectOnline = state.dashboard.plantStatus.deviceOnline,
-        lastUpdateLabel = "Last update: ${state.dashboard.plantStatus.lastUpdate}",
-    )
+    val topBarState = dashboardTopBarState(state)
 
     Row(modifier = Modifier.fillMaxSize()) {
         AppSidebar(
@@ -95,7 +97,11 @@ private fun ExpandedDashboardLayout(
                 onAction(HomeAction.OnSidebarDestinationSelected(SidebarDestination.HISTORY))
             },
             onPlantAndPotClick = {
-                onAction(HomeAction.OnSidebarDestinationSelected(SidebarDestination.PLANT_AND_POT))
+                if (onPotsClick != null) {
+                    onPotsClick()
+                } else {
+                    onAction(HomeAction.OnSidebarDestinationSelected(SidebarDestination.PLANT_AND_POT))
+                }
             },
             onAlertsClick = {
                 onAction(HomeAction.OnSidebarDestinationSelected(SidebarDestination.ALERTS))
@@ -136,14 +142,10 @@ private fun ExpandedDashboardLayout(
 private fun CompactDashboardLayout(
     state: HomeState,
     onAction: (HomeAction) -> Unit,
+    onPotsClick: (() -> Unit)?,
     onLoggedOut: () -> Unit,
 ) {
-    val topBarState = AppTopBarState(
-        title = "Dashboard",
-        subject = state.dashboard.plantStatus.name,
-        subjectOnline = state.dashboard.plantStatus.deviceOnline,
-        lastUpdateLabel = "Last update: ${state.dashboard.plantStatus.lastUpdate}",
-    )
+    val topBarState = dashboardTopBarState(state)
 
     Column(modifier = Modifier.fillMaxSize()) {
         if (state.selectedDestination != SidebarDestination.PROFILE) {
@@ -164,7 +166,11 @@ private fun CompactDashboardLayout(
                 onAction(HomeAction.OnSidebarDestinationSelected(SidebarDestination.HISTORY))
             },
             onPlantAndPotClick = {
-                onAction(HomeAction.OnSidebarDestinationSelected(SidebarDestination.PLANT_AND_POT))
+                if (onPotsClick != null) {
+                    onPotsClick()
+                } else {
+                    onAction(HomeAction.OnSidebarDestinationSelected(SidebarDestination.PLANT_AND_POT))
+                }
             },
             onAlertsClick = {
                 onAction(HomeAction.OnSidebarDestinationSelected(SidebarDestination.ALERTS))
@@ -194,11 +200,35 @@ private fun DashboardContent(
     modifier: Modifier = Modifier,
 ) {
     val profileViewModel = remember { ProfileViewModel() }
+    val potListViewModel = remember { PotListViewModel() }
 
     if (state.selectedDestination == SidebarDestination.PROFILE) {
         ProfileScreen(
             viewModel = profileViewModel,
             onLoggedOut = onLoggedOut,
+            modifier = modifier,
+        )
+        return
+    }
+
+    if (state.selectedDestination == SidebarDestination.PLANT_AND_POT) {
+        PotListContent(
+            state = potListViewModel.state,
+            onPotClick = { id ->
+                potListViewModel.onAction(PotListAction.OnPotClick(id))
+            },
+            onEditPotClick = { id ->
+                potListViewModel.onAction(PotListAction.OnEditPotClick(id))
+            },
+            onDeletePotClick = { id ->
+                potListViewModel.onAction(PotListAction.OnDeletePotClick(id))
+            },
+            onAddPotClick = {
+                potListViewModel.onAction(PotListAction.OnAddPotClick)
+            },
+            onRefreshClick = {
+                potListViewModel.onAction(PotListAction.OnRefresh)
+            },
             modifier = modifier,
         )
         return
@@ -277,6 +307,23 @@ private fun DashboardContent(
             )
         }
     }
+}
+
+private fun dashboardTopBarState(state: HomeState): AppTopBarState {
+    val title = when (state.selectedDestination) {
+        SidebarDestination.HOME -> "Dashboard"
+        SidebarDestination.HISTORY -> "Historico"
+        SidebarDestination.PLANT_AND_POT -> "Planta & Vaso"
+        SidebarDestination.ALERTS -> "Alertas"
+        SidebarDestination.PROFILE -> "Perfil"
+    }
+
+    return AppTopBarState(
+        title = title,
+        subject = state.dashboard.plantStatus.name,
+        subjectOnline = state.dashboard.plantStatus.deviceOnline,
+        lastUpdateLabel = "Last update: ${state.dashboard.plantStatus.lastUpdate}",
+    )
 }
 
 @Composable

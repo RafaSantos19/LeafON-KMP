@@ -7,6 +7,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
+import androidx.savedstate.read
 import kmp.edu.leafon_kmp.presentation.home.DashboardScreen
 import kmp.edu.leafon_kmp.presentation.home.HomeAction
 import kmp.edu.leafon_kmp.presentation.home.HomeViewModel
@@ -14,6 +17,12 @@ import kmp.edu.leafon_kmp.presentation.login.LoginAction
 import kmp.edu.leafon_kmp.presentation.login.LoginScreen
 import kmp.edu.leafon_kmp.presentation.login.LoginViewModel
 import kmp.edu.leafon_kmp.presentation.navigation.AppRoute
+import kmp.edu.leafon_kmp.presentation.pots.PotListScreen
+import kmp.edu.leafon_kmp.presentation.pots.PotListViewModel
+import kmp.edu.leafon_kmp.presentation.pots.create.CreatePotScreen
+import kmp.edu.leafon_kmp.presentation.pots.edit.EditPotScreen
+import kmp.edu.leafon_kmp.presentation.profile.ProfileRouteScreen
+import kmp.edu.leafon_kmp.presentation.profile.ProfileViewModel
 import kmp.edu.leafon_kmp.presentation.register.RegisterAction
 import kmp.edu.leafon_kmp.presentation.register.RegisterScreen
 import kmp.edu.leafon_kmp.presentation.register.RegisterViewModel
@@ -93,6 +102,9 @@ fun App() {
                 DashboardScreen(
                     state = homeViewModel.state,
                     onAction = homeViewModel::onAction,
+                    onPotsClick = {
+                        navController.navigate(AppRoute.Pots.route)
+                    },
                     onLoggedOut = {
                         navController.navigate(AppRoute.Login.route) {
                             popUpTo(AppRoute.Home.route) {
@@ -100,6 +112,110 @@ fun App() {
                             }
                         }
                     }
+                )
+            }
+
+            composable(AppRoute.Pots.route) {
+                val potListViewModel = remember { PotListViewModel() }
+
+                PotListScreen(
+                    viewModel = potListViewModel,
+                    onAddPotClick = {
+                        navController.navigate(AppRoute.CreatePot.route)
+                    },
+                    onNavigateToPotDetail = {
+                        // Detail screen will be wired in a later phase.
+                    },
+                    onNavigateToEditPot = { potId ->
+                        navController.navigate(AppRoute.EditPot.createRoute(potId))
+                    },
+                    onDeletePot = {
+                        // Delete confirmation/backend integration will be wired in a later phase.
+                    },
+                    onHomeClick = {
+                        navController.navigate(AppRoute.Home.route) {
+                            popUpTo(AppRoute.Home.route) {
+                                inclusive = false
+                            }
+                            launchSingleTop = true
+                        }
+                    },
+                    onProfileClick = {
+                        navController.navigate(AppRoute.Profile.route)
+                    },
+                )
+            }
+
+            composable(
+                route = AppRoute.EditPot.route,
+                arguments = listOf(
+                    navArgument(AppRoute.EditPot.ARG_POT_ID) {
+                        type = NavType.StringType
+                    }
+                ),
+            ) { backStackEntry ->
+                val potId = backStackEntry.arguments?.read {
+                    getStringOrNull(AppRoute.EditPot.ARG_POT_ID)
+                }
+
+                EditPotScreen(
+                    potId = potId.orEmpty(),
+                    onBackClick = {
+                        if (!navController.popBackStack()) {
+                            navController.navigate(AppRoute.Pots.route)
+                        }
+                    },
+                    onPotUpdated = {
+                        if (!navController.popBackStack(AppRoute.Pots.route, inclusive = false)) {
+                            navController.navigate(AppRoute.Pots.route)
+                        }
+                    },
+                    onProfileClick = {
+                        navController.navigate(AppRoute.Profile.route)
+                    },
+                )
+            }
+
+            composable(AppRoute.CreatePot.route) {
+                CreatePotScreen(
+                    onBackClick = {
+                        if (!navController.popBackStack()) {
+                            navController.navigate(AppRoute.Pots.route)
+                        }
+                    },
+                    onPotCreated = {
+                        if (!navController.popBackStack(AppRoute.Pots.route, inclusive = false)) {
+                            navController.navigate(AppRoute.Pots.route)
+                        }
+                    },
+                    onProfileClick = {
+                        navController.navigate(AppRoute.Profile.route)
+                    },
+                )
+            }
+
+            composable(AppRoute.Profile.route) {
+                val profileViewModel = remember { ProfileViewModel() }
+
+                ProfileRouteScreen(
+                    viewModel = profileViewModel,
+                    onHomeClick = {
+                        navController.navigate(AppRoute.Home.route) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onPotsClick = {
+                        navController.navigate(AppRoute.Pots.route) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onLoggedOut = {
+                        navController.navigate(AppRoute.Login.route) {
+                            popUpTo(AppRoute.Profile.route) {
+                                inclusive = true
+                            }
+                        }
+                    },
                 )
             }
         }

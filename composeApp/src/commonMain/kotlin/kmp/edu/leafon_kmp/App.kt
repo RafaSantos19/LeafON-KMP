@@ -19,8 +19,12 @@ import kmp.edu.leafon_kmp.presentation.login.LoginViewModel
 import kmp.edu.leafon_kmp.presentation.navigation.AppRoute
 import kmp.edu.leafon_kmp.presentation.pots.PotListScreen
 import kmp.edu.leafon_kmp.presentation.pots.PotListViewModel
+import kmp.edu.leafon_kmp.presentation.pots.alerts.list.AlertListScreen
 import kmp.edu.leafon_kmp.presentation.pots.create.CreatePotScreen
+import kmp.edu.leafon_kmp.presentation.pots.detail.PotDetailScreen
 import kmp.edu.leafon_kmp.presentation.pots.edit.EditPotScreen
+import kmp.edu.leafon_kmp.presentation.pots.routines.create.CreateRoutineScreen
+import kmp.edu.leafon_kmp.presentation.pots.routines.list.RoutineListScreen
 import kmp.edu.leafon_kmp.presentation.profile.ProfileRouteScreen
 import kmp.edu.leafon_kmp.presentation.profile.ProfileViewModel
 import kmp.edu.leafon_kmp.presentation.register.RegisterAction
@@ -105,6 +109,12 @@ fun App() {
                     onPotsClick = {
                         navController.navigate(AppRoute.Pots.route)
                     },
+                    onAlertsClick = {
+                        navController.navigate(AppRoute.Alerts.route)
+                    },
+                    onProfileClick = {
+                        navController.navigate(AppRoute.Profile.route)
+                    },
                     onLoggedOut = {
                         navController.navigate(AppRoute.Login.route) {
                             popUpTo(AppRoute.Home.route) {
@@ -123,8 +133,8 @@ fun App() {
                     onAddPotClick = {
                         navController.navigate(AppRoute.CreatePot.route)
                     },
-                    onNavigateToPotDetail = {
-                        // Detail screen will be wired in a later phase.
+                    onNavigateToPotDetail = { potId ->
+                        navController.navigate(AppRoute.PotDetail.createRoute(potId))
                     },
                     onNavigateToEditPot = { potId ->
                         navController.navigate(AppRoute.EditPot.createRoute(potId))
@@ -139,6 +149,201 @@ fun App() {
                             }
                             launchSingleTop = true
                         }
+                    },
+                    onAlertsClick = {
+                        navController.navigate(AppRoute.Alerts.route)
+                    },
+                    onProfileClick = {
+                        navController.navigate(AppRoute.Profile.route)
+                    },
+                )
+            }
+
+            composable(
+                route = AppRoute.PotDetail.route,
+                arguments = listOf(
+                    navArgument(AppRoute.PotDetail.ARG_POT_ID) {
+                        type = NavType.StringType
+                    }
+                ),
+            ) { backStackEntry ->
+                val potId = backStackEntry.arguments?.read {
+                    getStringOrNull(AppRoute.PotDetail.ARG_POT_ID)
+                }
+
+                PotDetailScreen(
+                    potId = potId.orEmpty(),
+                    onBackClick = {
+                        if (!navController.popBackStack()) {
+                            navController.navigate(AppRoute.Pots.route)
+                        }
+                    },
+                    onEditClick = { selectedPotId ->
+                        navController.navigate(AppRoute.EditPot.createRoute(selectedPotId))
+                    },
+                    onViewRoutinesClick = { selectedPotId ->
+                        navController.navigate(AppRoute.PotRoutines.createRoute(selectedPotId))
+                    },
+                    onViewAlertsClick = { selectedPotId ->
+                        navController.navigate(AppRoute.PotAlerts.createRoute(selectedPotId))
+                    },
+                    onHomeClick = {
+                        navController.navigate(AppRoute.Home.route) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onPotsClick = {
+                        if (!navController.popBackStack(AppRoute.Pots.route, inclusive = false)) {
+                            navController.navigate(AppRoute.Pots.route)
+                        }
+                    },
+                    onAlertsClick = {
+                        navController.navigate(AppRoute.PotAlerts.createRoute(potId.orEmpty()))
+                    },
+                    onProfileClick = {
+                        navController.navigate(AppRoute.Profile.route)
+                    },
+                )
+            }
+
+            composable(AppRoute.Alerts.route) {
+                AlertListScreen(
+                    potId = "1",
+                    onBackClick = {
+                        if (!navController.popBackStack()) {
+                            navController.navigate(AppRoute.Home.route)
+                        }
+                    },
+                    onHomeClick = {
+                        navController.navigate(AppRoute.Home.route) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onPotsClick = {
+                        navController.navigate(AppRoute.Pots.route) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onAlertsClick = {},
+                    onProfileClick = {
+                        navController.navigate(AppRoute.Profile.route)
+                    },
+                )
+            }
+
+            composable(
+                route = AppRoute.PotAlerts.route,
+                arguments = listOf(
+                    navArgument(AppRoute.PotAlerts.ARG_POT_ID) {
+                        type = NavType.StringType
+                    }
+                ),
+            ) { backStackEntry ->
+                val potId = backStackEntry.arguments?.read {
+                    getStringOrNull(AppRoute.PotAlerts.ARG_POT_ID)
+                }.orEmpty()
+
+                AlertListScreen(
+                    potId = potId,
+                    onBackClick = {
+                        if (!navController.popBackStack()) {
+                            navController.navigate(AppRoute.PotDetail.createRoute(potId))
+                        }
+                    },
+                    onHomeClick = {
+                        navController.navigate(AppRoute.Home.route) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onPotsClick = {
+                        navController.navigate(AppRoute.Pots.route) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onAlertsClick = {},
+                    onProfileClick = {
+                        navController.navigate(AppRoute.Profile.route)
+                    },
+                )
+            }
+
+            composable(
+                route = AppRoute.PotRoutines.route,
+                arguments = listOf(
+                    navArgument(AppRoute.PotRoutines.ARG_POT_ID) {
+                        type = NavType.StringType
+                    }
+                ),
+            ) { backStackEntry ->
+                val potId = backStackEntry.arguments?.read {
+                    getStringOrNull(AppRoute.PotRoutines.ARG_POT_ID)
+                }.orEmpty()
+
+                RoutineListScreen(
+                    potId = potId,
+                    onBackClick = {
+                        if (!navController.popBackStack()) {
+                            navController.navigate(AppRoute.PotDetail.createRoute(potId))
+                        }
+                    },
+                    onCreateRoutineClick = { selectedPotId ->
+                        navController.navigate(AppRoute.CreateRoutine.createRoute(selectedPotId))
+                    },
+                    onHomeClick = {
+                        navController.navigate(AppRoute.Home.route) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onPotsClick = {
+                        navController.navigate(AppRoute.Pots.route) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onAlertsClick = {
+                        navController.navigate(AppRoute.PotAlerts.createRoute(potId))
+                    },
+                    onProfileClick = {
+                        navController.navigate(AppRoute.Profile.route)
+                    },
+                )
+            }
+
+            composable(
+                route = AppRoute.CreateRoutine.route,
+                arguments = listOf(
+                    navArgument(AppRoute.CreateRoutine.ARG_POT_ID) {
+                        type = NavType.StringType
+                    }
+                ),
+            ) { backStackEntry ->
+                val potId = backStackEntry.arguments?.read {
+                    getStringOrNull(AppRoute.CreateRoutine.ARG_POT_ID)
+                }.orEmpty()
+
+                CreateRoutineScreen(
+                    potId = potId,
+                    onBackClick = {
+                        if (!navController.popBackStack()) {
+                            navController.navigate(AppRoute.PotRoutines.createRoute(potId))
+                        }
+                    },
+                    onRoutineCreated = {
+                        if (!navController.popBackStack(AppRoute.PotRoutines.createRoute(potId), inclusive = false)) {
+                            navController.navigate(AppRoute.PotRoutines.createRoute(potId))
+                        }
+                    },
+                    onHomeClick = {
+                        navController.navigate(AppRoute.Home.route) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onPotsClick = {
+                        navController.navigate(AppRoute.Pots.route) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onAlertsClick = {
+                        navController.navigate(AppRoute.PotAlerts.createRoute(potId))
                     },
                     onProfileClick = {
                         navController.navigate(AppRoute.Profile.route)
@@ -170,6 +375,19 @@ fun App() {
                             navController.navigate(AppRoute.Pots.route)
                         }
                     },
+                    onHomeClick = {
+                        navController.navigate(AppRoute.Home.route) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onPotsClick = {
+                        navController.navigate(AppRoute.Pots.route) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onAlertsClick = {
+                        navController.navigate(AppRoute.PotAlerts.createRoute(potId.orEmpty()))
+                    },
                     onProfileClick = {
                         navController.navigate(AppRoute.Profile.route)
                     },
@@ -187,6 +405,19 @@ fun App() {
                         if (!navController.popBackStack(AppRoute.Pots.route, inclusive = false)) {
                             navController.navigate(AppRoute.Pots.route)
                         }
+                    },
+                    onHomeClick = {
+                        navController.navigate(AppRoute.Home.route) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onPotsClick = {
+                        navController.navigate(AppRoute.Pots.route) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onAlertsClick = {
+                        navController.navigate(AppRoute.Alerts.route)
                     },
                     onProfileClick = {
                         navController.navigate(AppRoute.Profile.route)
@@ -206,6 +437,11 @@ fun App() {
                     },
                     onPotsClick = {
                         navController.navigate(AppRoute.Pots.route) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onAlertsClick = {
+                        navController.navigate(AppRoute.Alerts.route) {
                             launchSingleTop = true
                         }
                     },

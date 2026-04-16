@@ -22,7 +22,6 @@ fun ProfileRouteScreen(
     viewModel: ProfileViewModel,
     onHomeClick: () -> Unit = {},
     onPotsClick: () -> Unit = {},
-    onHistoryClick: () -> Unit = {},
     onAlertsClick: () -> Unit = {},
     onLoggedOut: () -> Unit,
     modifier: Modifier = Modifier,
@@ -39,7 +38,6 @@ fun ProfileRouteScreen(
                 viewModel = viewModel,
                 onHomeClick = onHomeClick,
                 onPotsClick = onPotsClick,
-                onHistoryClick = onHistoryClick,
                 onAlertsClick = onAlertsClick,
                 onLoggedOut = onLoggedOut,
             )
@@ -48,7 +46,6 @@ fun ProfileRouteScreen(
                 viewModel = viewModel,
                 onHomeClick = onHomeClick,
                 onPotsClick = onPotsClick,
-                onHistoryClick = onHistoryClick,
                 onAlertsClick = onAlertsClick,
                 onLoggedOut = onLoggedOut,
             )
@@ -61,7 +58,6 @@ private fun ExpandedProfileLayout(
     viewModel: ProfileViewModel,
     onHomeClick: () -> Unit,
     onPotsClick: () -> Unit,
-    onHistoryClick: () -> Unit,
     onAlertsClick: () -> Unit,
     onLoggedOut: () -> Unit,
 ) {
@@ -69,7 +65,6 @@ private fun ExpandedProfileLayout(
         AppSidebar(
             selectedDestination = SidebarDestination.PROFILE,
             onHomeClick = onHomeClick,
-            onHistoryClick = onHistoryClick,
             onPlantAndPotClick = onPotsClick,
             onAlertsClick = onAlertsClick,
             onProfileClick = {},
@@ -102,7 +97,6 @@ private fun CompactProfileLayout(
     viewModel: ProfileViewModel,
     onHomeClick: () -> Unit,
     onPotsClick: () -> Unit,
-    onHistoryClick: () -> Unit,
     onAlertsClick: () -> Unit,
     onLoggedOut: () -> Unit,
 ) {
@@ -116,7 +110,6 @@ private fun CompactProfileLayout(
         AppSidebar(
             selectedDestination = SidebarDestination.PROFILE,
             onHomeClick = onHomeClick,
-            onHistoryClick = onHistoryClick,
             onPlantAndPotClick = onPotsClick,
             onAlertsClick = onAlertsClick,
             onProfileClick = {},

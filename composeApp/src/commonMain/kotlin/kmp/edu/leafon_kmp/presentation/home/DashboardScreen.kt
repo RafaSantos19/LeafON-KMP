@@ -50,6 +50,8 @@ fun DashboardScreen(
     state: HomeState,
     onAction: (HomeAction) -> Unit = {},
     onPotsClick: (() -> Unit)? = null,
+    onAlertsClick: (() -> Unit)? = null,
+    onProfileClick: (() -> Unit)? = null,
     onLoggedOut: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
@@ -65,6 +67,8 @@ fun DashboardScreen(
                 state = state,
                 onAction = onAction,
                 onPotsClick = onPotsClick,
+                onAlertsClick = onAlertsClick,
+                onProfileClick = onProfileClick,
                 onLoggedOut = onLoggedOut,
             )
         } else {
@@ -72,6 +76,8 @@ fun DashboardScreen(
                 state = state,
                 onAction = onAction,
                 onPotsClick = onPotsClick,
+                onAlertsClick = onAlertsClick,
+                onProfileClick = onProfileClick,
                 onLoggedOut = onLoggedOut,
             )
         }
@@ -83,6 +89,8 @@ private fun ExpandedDashboardLayout(
     state: HomeState,
     onAction: (HomeAction) -> Unit,
     onPotsClick: (() -> Unit)?,
+    onAlertsClick: (() -> Unit)?,
+    onProfileClick: (() -> Unit)?,
     onLoggedOut: () -> Unit,
 ) {
     val topBarState = dashboardTopBarState(state)
@@ -93,9 +101,6 @@ private fun ExpandedDashboardLayout(
             onHomeClick = {
                 onAction(HomeAction.OnSidebarDestinationSelected(SidebarDestination.HOME))
             },
-            onHistoryClick = {
-                onAction(HomeAction.OnSidebarDestinationSelected(SidebarDestination.HISTORY))
-            },
             onPlantAndPotClick = {
                 if (onPotsClick != null) {
                     onPotsClick()
@@ -104,10 +109,18 @@ private fun ExpandedDashboardLayout(
                 }
             },
             onAlertsClick = {
-                onAction(HomeAction.OnSidebarDestinationSelected(SidebarDestination.ALERTS))
+                if (onAlertsClick != null) {
+                    onAlertsClick()
+                } else {
+                    onAction(HomeAction.OnSidebarDestinationSelected(SidebarDestination.ALERTS))
+                }
             },
             onProfileClick = {
-                onAction(HomeAction.OnSidebarDestinationSelected(SidebarDestination.PROFILE))
+                if (onProfileClick != null) {
+                    onProfileClick()
+                } else {
+                    onAction(HomeAction.OnSidebarDestinationSelected(SidebarDestination.PROFILE))
+                }
             },
         )
 
@@ -143,6 +156,8 @@ private fun CompactDashboardLayout(
     state: HomeState,
     onAction: (HomeAction) -> Unit,
     onPotsClick: (() -> Unit)?,
+    onAlertsClick: (() -> Unit)?,
+    onProfileClick: (() -> Unit)?,
     onLoggedOut: () -> Unit,
 ) {
     val topBarState = dashboardTopBarState(state)
@@ -162,9 +177,6 @@ private fun CompactDashboardLayout(
             onHomeClick = {
                 onAction(HomeAction.OnSidebarDestinationSelected(SidebarDestination.HOME))
             },
-            onHistoryClick = {
-                onAction(HomeAction.OnSidebarDestinationSelected(SidebarDestination.HISTORY))
-            },
             onPlantAndPotClick = {
                 if (onPotsClick != null) {
                     onPotsClick()
@@ -173,10 +185,18 @@ private fun CompactDashboardLayout(
                 }
             },
             onAlertsClick = {
-                onAction(HomeAction.OnSidebarDestinationSelected(SidebarDestination.ALERTS))
+                if (onAlertsClick != null) {
+                    onAlertsClick()
+                } else {
+                    onAction(HomeAction.OnSidebarDestinationSelected(SidebarDestination.ALERTS))
+                }
             },
             onProfileClick = {
-                onAction(HomeAction.OnSidebarDestinationSelected(SidebarDestination.PROFILE))
+                if (onProfileClick != null) {
+                    onProfileClick()
+                } else {
+                    onAction(HomeAction.OnSidebarDestinationSelected(SidebarDestination.PROFILE))
+                }
             },
             compact = true,
         )
@@ -312,7 +332,6 @@ private fun DashboardContent(
 private fun dashboardTopBarState(state: HomeState): AppTopBarState {
     val title = when (state.selectedDestination) {
         SidebarDestination.HOME -> "Dashboard"
-        SidebarDestination.HISTORY -> "Historico"
         SidebarDestination.PLANT_AND_POT -> "Planta & Vaso"
         SidebarDestination.ALERTS -> "Alertas"
         SidebarDestination.PROFILE -> "Perfil"

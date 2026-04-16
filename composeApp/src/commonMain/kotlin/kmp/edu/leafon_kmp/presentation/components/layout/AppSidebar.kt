@@ -19,7 +19,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Person
@@ -41,7 +40,6 @@ import org.jetbrains.compose.resources.painterResource
 
 enum class SidebarDestination {
     HOME,
-    HISTORY,
     PLANT_AND_POT,
     ALERTS,
     PROFILE
@@ -51,7 +49,6 @@ enum class SidebarDestination {
 fun AppSidebar(
     selectedDestination: SidebarDestination = SidebarDestination.HOME,
     onHomeClick: () -> Unit = {},
-    onHistoryClick: () -> Unit = {},
     onPlantAndPotClick: () -> Unit = {},
     onAlertsClick: () -> Unit = {},
     onProfileClick: () -> Unit = {},
@@ -64,12 +61,6 @@ fun AppSidebar(
             label = "Home",
             icon = Icons.Outlined.Home,
             onClick = onHomeClick
-        ),
-        SidebarItem(
-            destination = SidebarDestination.HISTORY,
-            label = "Historico",
-            icon = Icons.Outlined.History,
-            onClick = onHistoryClick
         ),
         SidebarItem(
             destination = SidebarDestination.PLANT_AND_POT,

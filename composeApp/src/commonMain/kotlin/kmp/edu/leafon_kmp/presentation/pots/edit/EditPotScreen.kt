@@ -35,6 +35,9 @@ fun EditPotScreen(
     potId: String,
     onBackClick: () -> Unit,
     onPotUpdated: () -> Unit,
+    onHomeClick: () -> Unit = onBackClick,
+    onPotsClick: () -> Unit = onBackClick,
+    onAlertsClick: () -> Unit = {},
     onProfileClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
@@ -57,6 +60,9 @@ fun EditPotScreen(
                 state = viewModel.state,
                 onAction = viewModel::onAction,
                 onBackClick = onBackClick,
+                onHomeClick = onHomeClick,
+                onPotsClick = onPotsClick,
+                onAlertsClick = onAlertsClick,
                 onProfileClick = onProfileClick,
             )
         } else {
@@ -64,6 +70,9 @@ fun EditPotScreen(
                 state = viewModel.state,
                 onAction = viewModel::onAction,
                 onBackClick = onBackClick,
+                onHomeClick = onHomeClick,
+                onPotsClick = onPotsClick,
+                onAlertsClick = onAlertsClick,
                 onProfileClick = onProfileClick,
             )
         }
@@ -75,13 +84,17 @@ private fun ExpandedEditPotLayout(
     state: EditPotState,
     onAction: (EditPotAction) -> Unit,
     onBackClick: () -> Unit,
+    onHomeClick: () -> Unit,
+    onPotsClick: () -> Unit,
+    onAlertsClick: () -> Unit,
     onProfileClick: () -> Unit,
 ) {
     Row(modifier = Modifier.fillMaxSize()) {
         AppSidebar(
             selectedDestination = SidebarDestination.PLANT_AND_POT,
-            onHomeClick = onBackClick,
-            onPlantAndPotClick = onBackClick,
+            onHomeClick = onHomeClick,
+            onPlantAndPotClick = onPotsClick,
+            onAlertsClick = onAlertsClick,
             onProfileClick = onProfileClick,
         )
 
@@ -93,7 +106,10 @@ private fun ExpandedEditPotLayout(
         )
 
         Column(modifier = Modifier.fillMaxSize()) {
-            AppTopBar(state = editPotTopBarState())
+            AppTopBar(
+                state = editPotTopBarState(),
+                onProfileClick = onProfileClick,
+            )
 
             EditPotContent(
                 state = state,
@@ -110,18 +126,23 @@ private fun CompactEditPotLayout(
     state: EditPotState,
     onAction: (EditPotAction) -> Unit,
     onBackClick: () -> Unit,
+    onHomeClick: () -> Unit,
+    onPotsClick: () -> Unit,
+    onAlertsClick: () -> Unit,
     onProfileClick: () -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         AppTopBar(
             state = editPotTopBarState(),
+            onProfileClick = onProfileClick,
             compact = true,
         )
 
         AppSidebar(
             selectedDestination = SidebarDestination.PLANT_AND_POT,
-            onHomeClick = onBackClick,
-            onPlantAndPotClick = onBackClick,
+            onHomeClick = onHomeClick,
+            onPlantAndPotClick = onPotsClick,
+            onAlertsClick = onAlertsClick,
             onProfileClick = onProfileClick,
             compact = true,
         )

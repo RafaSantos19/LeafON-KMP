@@ -1,4 +1,4 @@
-package kmp.edu.leafon_kmp.presentation.pots.create
+package kmp.edu.leafon_kmp.presentation.pots.routines.create
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -19,20 +19,25 @@ import kmp.edu.leafon_kmp.presentation.components.layout.AppSidebar
 import kmp.edu.leafon_kmp.presentation.components.layout.AppTopBar
 import kmp.edu.leafon_kmp.presentation.components.layout.AppTopBarState
 import kmp.edu.leafon_kmp.presentation.components.layout.SidebarDestination
-import kmp.edu.leafon_kmp.presentation.pots.components.PotFormContent
+import kmp.edu.leafon_kmp.presentation.pots.routines.components.RoutineFormContent
 
 @Composable
-fun CreatePotScreen(
+fun CreateRoutineScreen(
+    potId: String,
     onBackClick: () -> Unit,
-    onPotCreated: () -> Unit,
-    onHomeClick: () -> Unit = onBackClick,
+    onRoutineCreated: () -> Unit,
+    onHomeClick: () -> Unit = {},
     onPotsClick: () -> Unit = onBackClick,
     onAlertsClick: () -> Unit = {},
     onProfileClick: () -> Unit = {},
+    onNotificationsClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    val viewModel = remember(onPotCreated) {
-        CreatePotViewModel(onCreated = onPotCreated)
+    val viewModel = remember(potId, onRoutineCreated) {
+        CreateRoutineViewModel(
+            potId = potId,
+            onCreated = onRoutineCreated,
+        )
     }
 
     BoxWithConstraints(
@@ -43,7 +48,7 @@ fun CreatePotScreen(
         val isCompact = maxWidth < 960.dp
 
         if (isCompact) {
-            CompactCreatePotLayout(
+            CompactCreateRoutineLayout(
                 state = viewModel.state,
                 onAction = viewModel::onAction,
                 onBackClick = onBackClick,
@@ -51,9 +56,10 @@ fun CreatePotScreen(
                 onPotsClick = onPotsClick,
                 onAlertsClick = onAlertsClick,
                 onProfileClick = onProfileClick,
+                onNotificationsClick = onNotificationsClick,
             )
         } else {
-            ExpandedCreatePotLayout(
+            ExpandedCreateRoutineLayout(
                 state = viewModel.state,
                 onAction = viewModel::onAction,
                 onBackClick = onBackClick,
@@ -61,20 +67,22 @@ fun CreatePotScreen(
                 onPotsClick = onPotsClick,
                 onAlertsClick = onAlertsClick,
                 onProfileClick = onProfileClick,
+                onNotificationsClick = onNotificationsClick,
             )
         }
     }
 }
 
 @Composable
-private fun ExpandedCreatePotLayout(
-    state: CreatePotState,
-    onAction: (CreatePotAction) -> Unit,
+private fun ExpandedCreateRoutineLayout(
+    state: CreateRoutineState,
+    onAction: (CreateRoutineAction) -> Unit,
     onBackClick: () -> Unit,
     onHomeClick: () -> Unit,
     onPotsClick: () -> Unit,
     onAlertsClick: () -> Unit,
     onProfileClick: () -> Unit,
+    onNotificationsClick: () -> Unit,
 ) {
     Row(modifier = Modifier.fillMaxSize()) {
         AppSidebar(
@@ -94,11 +102,12 @@ private fun ExpandedCreatePotLayout(
 
         Column(modifier = Modifier.fillMaxSize()) {
             AppTopBar(
-                state = createPotTopBarState(),
+                state = createRoutineTopBarState(),
+                onNotificationsClick = onNotificationsClick,
                 onProfileClick = onProfileClick,
             )
 
-            CreatePotContent(
+            CreateRoutineContent(
                 state = state,
                 onAction = onAction,
                 onBackClick = onBackClick,
@@ -109,18 +118,20 @@ private fun ExpandedCreatePotLayout(
 }
 
 @Composable
-private fun CompactCreatePotLayout(
-    state: CreatePotState,
-    onAction: (CreatePotAction) -> Unit,
+private fun CompactCreateRoutineLayout(
+    state: CreateRoutineState,
+    onAction: (CreateRoutineAction) -> Unit,
     onBackClick: () -> Unit,
     onHomeClick: () -> Unit,
     onPotsClick: () -> Unit,
     onAlertsClick: () -> Unit,
     onProfileClick: () -> Unit,
+    onNotificationsClick: () -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         AppTopBar(
-            state = createPotTopBarState(),
+            state = createRoutineTopBarState(),
+            onNotificationsClick = onNotificationsClick,
             onProfileClick = onProfileClick,
             compact = true,
         )
@@ -134,7 +145,7 @@ private fun CompactCreatePotLayout(
             compact = true,
         )
 
-        CreatePotContent(
+        CreateRoutineContent(
             state = state,
             onAction = onAction,
             onBackClick = onBackClick,
@@ -144,9 +155,9 @@ private fun CompactCreatePotLayout(
 }
 
 @Composable
-private fun CreatePotContent(
-    state: CreatePotState,
-    onAction: (CreatePotAction) -> Unit,
+private fun CreateRoutineContent(
+    state: CreateRoutineState,
+    onAction: (CreateRoutineAction) -> Unit,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -156,32 +167,40 @@ private fun CreatePotContent(
             .padding(horizontal = 24.dp, vertical = 28.dp),
         contentAlignment = Alignment.TopCenter,
     ) {
-        PotFormContent(
+        RoutineFormContent(
             name = state.name,
-            plantName = state.plantName,
-            deviceId = state.deviceId,
+            time = state.time,
+            selectedDays = state.selectedDays,
+            durationSec = state.durationSec,
+            enabled = state.enabled,
             isSaving = state.isSaving,
             errorMessage = state.errorMessage,
             onNameChange = { value ->
-                onAction(CreatePotAction.OnNameChange(value))
+                onAction(CreateRoutineAction.OnNameChange(value))
             },
-            onPlantNameChange = { value ->
-                onAction(CreatePotAction.OnPlantNameChange(value))
+            onTimeChange = { value ->
+                onAction(CreateRoutineAction.OnTimeChange(value))
             },
-            onDeviceIdChange = { value ->
-                onAction(CreatePotAction.OnDeviceIdChange(value))
+            onToggleDay = { day ->
+                onAction(CreateRoutineAction.OnToggleDay(day))
+            },
+            onDurationChange = { value ->
+                onAction(CreateRoutineAction.OnDurationChange(value))
+            },
+            onToggleEnabled = {
+                onAction(CreateRoutineAction.OnToggleEnabled)
             },
             onSubmitClick = {
-                onAction(CreatePotAction.OnSaveClick)
+                onAction(CreateRoutineAction.OnSaveClick)
             },
             onCancelClick = onBackClick,
         )
     }
 }
 
-private fun createPotTopBarState() = AppTopBarState(
-    title = "Cadastrar pot",
-    subject = "Novo Smart Pot",
-    subjectOnline = false,
-    lastUpdateLabel = "Preencha os dados iniciais",
+private fun createRoutineTopBarState() = AppTopBarState(
+    title = "Nova rotina",
+    subject = "Automacao de irrigacao",
+    subjectOnline = true,
+    lastUpdateLabel = "Defina horario, dias e duracao",
 )

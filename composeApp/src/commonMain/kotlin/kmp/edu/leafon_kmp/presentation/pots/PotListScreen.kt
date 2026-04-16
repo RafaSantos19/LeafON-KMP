@@ -26,7 +26,6 @@ fun PotListScreen(
     onDeletePot: (String) -> Unit = {},
     onAddPotClick: () -> Unit = {},
     onHomeClick: () -> Unit = {},
-    onHistoryClick: () -> Unit = {},
     onAlertsClick: () -> Unit = {},
     onProfileClick: () -> Unit = {},
     onNotificationsClick: () -> Unit = {},
@@ -62,7 +61,6 @@ fun PotListScreen(
                     viewModel.onAction(PotListAction.OnRefresh)
                 },
                 onHomeClick = onHomeClick,
-                onHistoryClick = onHistoryClick,
                 onAlertsClick = onAlertsClick,
                 onProfileClick = onProfileClick,
                 onNotificationsClick = onNotificationsClick,
@@ -90,7 +88,6 @@ fun PotListScreen(
                     viewModel.onAction(PotListAction.OnRefresh)
                 },
                 onHomeClick = onHomeClick,
-                onHistoryClick = onHistoryClick,
                 onAlertsClick = onAlertsClick,
                 onProfileClick = onProfileClick,
                 onNotificationsClick = onNotificationsClick,
@@ -108,7 +105,6 @@ private fun ExpandedPotListLayout(
     onAddPotClick: () -> Unit,
     onRefreshClick: () -> Unit,
     onHomeClick: () -> Unit,
-    onHistoryClick: () -> Unit,
     onAlertsClick: () -> Unit,
     onProfileClick: () -> Unit,
     onNotificationsClick: () -> Unit,
@@ -117,7 +113,6 @@ private fun ExpandedPotListLayout(
         AppSidebar(
             selectedDestination = SidebarDestination.PLANT_AND_POT,
             onHomeClick = onHomeClick,
-            onHistoryClick = onHistoryClick,
             onPlantAndPotClick = {},
             onAlertsClick = onAlertsClick,
             onProfileClick = onProfileClick,
@@ -159,7 +154,6 @@ private fun CompactPotListLayout(
     onAddPotClick: () -> Unit,
     onRefreshClick: () -> Unit,
     onHomeClick: () -> Unit,
-    onHistoryClick: () -> Unit,
     onAlertsClick: () -> Unit,
     onProfileClick: () -> Unit,
     onNotificationsClick: () -> Unit,
@@ -175,7 +169,6 @@ private fun CompactPotListLayout(
         AppSidebar(
             selectedDestination = SidebarDestination.PLANT_AND_POT,
             onHomeClick = onHomeClick,
-            onHistoryClick = onHistoryClick,
             onPlantAndPotClick = {},
             onAlertsClick = onAlertsClick,
             onProfileClick = onProfileClick,

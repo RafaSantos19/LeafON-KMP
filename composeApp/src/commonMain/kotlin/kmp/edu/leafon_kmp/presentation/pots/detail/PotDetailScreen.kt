@@ -26,6 +26,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kmp.edu.leafon_kmp.data.RepositorioRemoto
+import kmp.edu.leafon_kmp.data.RepositorioRemotoEmMemoria
 import kmp.edu.leafon_kmp.presentation.components.global.LeafOnColors
 import kmp.edu.leafon_kmp.presentation.components.layout.AppSidebar
 import kmp.edu.leafon_kmp.presentation.components.layout.AppTopBar
@@ -39,6 +41,7 @@ import kmp.edu.leafon_kmp.presentation.pots.model.PotStatus
 @Composable
 fun PotDetailScreen(
     potId: String,
+    repositorio: RepositorioRemoto = RepositorioRemotoEmMemoria(),
     onBackClick: () -> Unit,
     onEditClick: (String) -> Unit,
     onViewRoutinesClick: (String) -> Unit,
@@ -50,8 +53,11 @@ fun PotDetailScreen(
     onNotificationsClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    val viewModel = remember(potId) {
-        PotDetailViewModel(potId = potId)
+    val viewModel = remember(potId, repositorio) {
+        PotDetailViewModel(
+            potId = potId,
+            repositorio = repositorio,
+        )
     }
 
     BoxWithConstraints(

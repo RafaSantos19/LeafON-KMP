@@ -3,10 +3,15 @@ package kmp.edu.leafon_kmp.presentation.pots.routines.create
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import kmp.edu.leafon_kmp.data.RepositorioRemoto
+import kmp.edu.leafon_kmp.data.RepositorioRemotoEmMemoria
+import kmp.edu.leafon_kmp.presentation.pots.routines.model.RoutineUi
 import kmp.edu.leafon_kmp.presentation.pots.routines.model.WeekDay
+import kmp.edu.leafon_kmp.presentation.pots.routines.model.toDaysLabel
 
 class CreateRoutineViewModel(
-    potId: String,
+    private val potId: String,
+    private val repositorio: RepositorioRemoto = RepositorioRemotoEmMemoria(),
     private val onCreated: () -> Unit = {},
 ) {
 
@@ -95,7 +100,23 @@ class CreateRoutineViewModel(
             errorMessage = null,
         )
 
+        repositorio.criarRotina(
+            potId = potId,
+            rotina = RoutineUi(
+                id = generateRoutineId(),
+                name = state.name.ifBlank { "Irrigacao $time" },
+                timeLabel = time,
+                daysLabel = state.selectedDays.toDaysLabel(),
+                durationSec = state.durationSec,
+                enabled = state.enabled,
+            ),
+        )
+
         state = state.copy(isSaving = false)
         onCreated()
+    }
+
+    private fun generateRoutineId(): String {
+        return "$potId-routine-${repositorio.listarRotinas(potId).size + 1}"
     }
 }

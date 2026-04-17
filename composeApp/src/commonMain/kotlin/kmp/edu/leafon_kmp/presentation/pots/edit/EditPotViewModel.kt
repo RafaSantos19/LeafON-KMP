@@ -3,9 +3,12 @@ package kmp.edu.leafon_kmp.presentation.pots.edit
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import kmp.edu.leafon_kmp.data.RepositorioRemoto
+import kmp.edu.leafon_kmp.data.RepositorioRemotoEmMemoria
 
 class EditPotViewModel(
     potId: String,
+    private val repositorio: RepositorioRemoto = RepositorioRemotoEmMemoria(),
     private val onUpdated: () -> Unit = {},
 ) {
 
@@ -26,7 +29,7 @@ class EditPotViewModel(
     }
 
     private fun loadPot(potId: String) {
-        val pot = getFakePotById(potId)
+        val pot = repositorio.buscarPotPorId(potId)
 
         state = if (pot == null) {
             state.copy(
@@ -37,7 +40,7 @@ class EditPotViewModel(
             state.copy(
                 potId = potId,
                 name = pot.name,
-                plantName = pot.plantName,
+                plantName = pot.plantType,
                 deviceId = pot.deviceId,
                 isLoading = false,
                 errorMessage = null,
@@ -89,51 +92,26 @@ class EditPotViewModel(
             errorMessage = null,
         )
 
+        val currentPot = repositorio.buscarPotPorId(state.potId)
+
+        if (currentPot == null) {
+            state = state.copy(
+                isSaving = false,
+                errorMessage = "Pot nao encontrado.",
+            )
+            return
+        }
+
+        repositorio.atualizarPot(
+            currentPot.copy(
+                name = potName,
+                plantType = plantName,
+                deviceId = state.deviceId,
+                lastUpdateLabel = "Agora",
+            )
+        )
+
         state = state.copy(isSaving = false)
         onUpdated()
     }
 }
-
-private data class PotFormData(
-    val id: String,
-    val name: String,
-    val plantName: String,
-    val deviceId: String,
-)
-
-private fun getFakePotById(id: String): PotFormData? {
-    return fakePotForms().firstOrNull { it.id == id }
-}
-
-private fun fakePotForms() = listOf(
-    PotFormData(
-        id = "1",
-        name = "Aloe Vera",
-        plantName = "Aloe Vera",
-        deviceId = "LEAF-001",
-    ),
-    PotFormData(
-        id = "2",
-        name = "Monstera Deliciosa",
-        plantName = "Monstera",
-        deviceId = "LEAF-002",
-    ),
-    PotFormData(
-        id = "3",
-        name = "Cacto Sao Jorge",
-        plantName = "Cacto Sao Jorge",
-        deviceId = "LEAF-003",
-    ),
-    PotFormData(
-        id = "4",
-        name = "Samambaia",
-        plantName = "Samambaia",
-        deviceId = "",
-    ),
-    PotFormData(
-        id = "5",
-        name = "Orquidea Phalaenopsis",
-        plantName = "Orquidea",
-        deviceId = "LEAF-005",
-    ),
-)

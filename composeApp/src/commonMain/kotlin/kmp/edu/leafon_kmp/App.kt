@@ -10,6 +10,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import androidx.savedstate.read
+import kmp.edu.leafon_kmp.data.RepositorioRemotoEmMemoria
 import kmp.edu.leafon_kmp.presentation.home.DashboardScreen
 import kmp.edu.leafon_kmp.presentation.home.HomeAction
 import kmp.edu.leafon_kmp.presentation.home.HomeViewModel
@@ -17,6 +18,7 @@ import kmp.edu.leafon_kmp.presentation.login.LoginAction
 import kmp.edu.leafon_kmp.presentation.login.LoginScreen
 import kmp.edu.leafon_kmp.presentation.login.LoginViewModel
 import kmp.edu.leafon_kmp.presentation.navigation.AppRoute
+import kmp.edu.leafon_kmp.presentation.pots.PotListAction
 import kmp.edu.leafon_kmp.presentation.pots.PotListScreen
 import kmp.edu.leafon_kmp.presentation.pots.PotListViewModel
 import kmp.edu.leafon_kmp.presentation.pots.alerts.list.AlertListScreen
@@ -35,6 +37,10 @@ import kmp.edu.leafon_kmp.presentation.register.RegisterViewModel
 @Preview
 fun App() {
     val navController = rememberNavController()
+    val repositorioRemoto = remember { RepositorioRemotoEmMemoria() }
+    val potListViewModel = remember(repositorioRemoto) {
+        PotListViewModel(repositorio = repositorioRemoto)
+    }
 
     MaterialTheme {
         NavHost(
@@ -126,8 +132,6 @@ fun App() {
             }
 
             composable(AppRoute.Pots.route) {
-                val potListViewModel = remember { PotListViewModel() }
-
                 PotListScreen(
                     viewModel = potListViewModel,
                     onAddPotClick = {
@@ -140,7 +144,7 @@ fun App() {
                         navController.navigate(AppRoute.EditPot.createRoute(potId))
                     },
                     onDeletePot = {
-                        // Delete confirmation/backend integration will be wired in a later phase.
+                        potListViewModel.onAction(PotListAction.OnRefresh)
                     },
                     onHomeClick = {
                         navController.navigate(AppRoute.Home.route) {
@@ -173,6 +177,7 @@ fun App() {
 
                 PotDetailScreen(
                     potId = potId.orEmpty(),
+                    repositorio = repositorioRemoto,
                     onBackClick = {
                         if (!navController.popBackStack()) {
                             navController.navigate(AppRoute.Pots.route)
@@ -281,6 +286,7 @@ fun App() {
 
                 RoutineListScreen(
                     potId = potId,
+                    repositorio = repositorioRemoto,
                     onBackClick = {
                         if (!navController.popBackStack()) {
                             navController.navigate(AppRoute.PotDetail.createRoute(potId))
@@ -322,6 +328,7 @@ fun App() {
 
                 CreateRoutineScreen(
                     potId = potId,
+                    repositorio = repositorioRemoto,
                     onBackClick = {
                         if (!navController.popBackStack()) {
                             navController.navigate(AppRoute.PotRoutines.createRoute(potId))
@@ -365,12 +372,14 @@ fun App() {
 
                 EditPotScreen(
                     potId = potId.orEmpty(),
+                    repositorio = repositorioRemoto,
                     onBackClick = {
                         if (!navController.popBackStack()) {
                             navController.navigate(AppRoute.Pots.route)
                         }
                     },
                     onPotUpdated = {
+                        potListViewModel.onAction(PotListAction.OnRefresh)
                         if (!navController.popBackStack(AppRoute.Pots.route, inclusive = false)) {
                             navController.navigate(AppRoute.Pots.route)
                         }
@@ -396,12 +405,14 @@ fun App() {
 
             composable(AppRoute.CreatePot.route) {
                 CreatePotScreen(
+                    repositorio = repositorioRemoto,
                     onBackClick = {
                         if (!navController.popBackStack()) {
                             navController.navigate(AppRoute.Pots.route)
                         }
                     },
                     onPotCreated = {
+                        potListViewModel.onAction(PotListAction.OnRefresh)
                         if (!navController.popBackStack(AppRoute.Pots.route, inclusive = false)) {
                             navController.navigate(AppRoute.Pots.route)
                         }

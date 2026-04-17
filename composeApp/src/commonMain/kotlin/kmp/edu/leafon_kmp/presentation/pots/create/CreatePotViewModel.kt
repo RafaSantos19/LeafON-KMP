@@ -3,8 +3,13 @@ package kmp.edu.leafon_kmp.presentation.pots.create
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import kmp.edu.leafon_kmp.data.RepositorioRemoto
+import kmp.edu.leafon_kmp.data.RepositorioRemotoEmMemoria
+import kmp.edu.leafon_kmp.presentation.pots.model.PotStatus
+import kmp.edu.leafon_kmp.presentation.pots.model.PotUi
 
 class CreatePotViewModel(
+    private val repositorio: RepositorioRemoto = RepositorioRemotoEmMemoria(),
     private val onCreated: () -> Unit = {},
 ) {
 
@@ -64,7 +69,29 @@ class CreatePotViewModel(
             errorMessage = null,
         )
 
+        repositorio.criarPot(
+            PotUi(
+                id = generatePotId(),
+                name = potName,
+                plantType = plantName,
+                status = PotStatus.OFFLINE,
+                humidityPercent = null,
+                temperatureCelsius = null,
+                lastUpdateLabel = "Agora",
+                deviceId = state.deviceId,
+            )
+        )
+
         state = state.copy(isSaving = false)
         onCreated()
+    }
+
+    private fun generatePotId(): String {
+        val lastNumericId = repositorio
+            .listarPots()
+            .mapNotNull { it.id.toLongOrNull() }
+            .maxOrNull() ?: 0L
+
+        return (lastNumericId + 1L).toString()
     }
 }

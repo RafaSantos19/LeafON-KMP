@@ -14,6 +14,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import kmp.edu.leafon_kmp.data.RepositorioRemoto
+import kmp.edu.leafon_kmp.data.RepositorioRemotoEmMemoria
 import kmp.edu.leafon_kmp.presentation.components.global.LeafOnColors
 import kmp.edu.leafon_kmp.presentation.components.layout.AppSidebar
 import kmp.edu.leafon_kmp.presentation.components.layout.AppTopBar
@@ -25,14 +27,18 @@ import kmp.edu.leafon_kmp.presentation.pots.components.PotFormContent
 fun CreatePotScreen(
     onBackClick: () -> Unit,
     onPotCreated: () -> Unit,
+    repositorio: RepositorioRemoto = RepositorioRemotoEmMemoria(),
     onHomeClick: () -> Unit = onBackClick,
     onPotsClick: () -> Unit = onBackClick,
     onAlertsClick: () -> Unit = {},
     onProfileClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    val viewModel = remember(onPotCreated) {
-        CreatePotViewModel(onCreated = onPotCreated)
+    val viewModel = remember(repositorio, onPotCreated) {
+        CreatePotViewModel(
+            repositorio = repositorio,
+            onCreated = onPotCreated,
+        )
     }
 
     BoxWithConstraints(

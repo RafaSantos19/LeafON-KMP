@@ -14,6 +14,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import kmp.edu.leafon_kmp.data.RepositorioRemoto
+import kmp.edu.leafon_kmp.data.RepositorioRemotoEmMemoria
 import kmp.edu.leafon_kmp.presentation.components.global.LeafOnColors
 import kmp.edu.leafon_kmp.presentation.components.layout.AppSidebar
 import kmp.edu.leafon_kmp.presentation.components.layout.AppTopBar
@@ -24,6 +26,7 @@ import kmp.edu.leafon_kmp.presentation.pots.routines.components.RoutineFormConte
 @Composable
 fun CreateRoutineScreen(
     potId: String,
+    repositorio: RepositorioRemoto = RepositorioRemotoEmMemoria(),
     onBackClick: () -> Unit,
     onRoutineCreated: () -> Unit,
     onHomeClick: () -> Unit = {},
@@ -33,9 +36,10 @@ fun CreateRoutineScreen(
     onNotificationsClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    val viewModel = remember(potId, onRoutineCreated) {
+    val viewModel = remember(potId, repositorio, onRoutineCreated) {
         CreateRoutineViewModel(
             potId = potId,
+            repositorio = repositorio,
             onCreated = onRoutineCreated,
         )
     }

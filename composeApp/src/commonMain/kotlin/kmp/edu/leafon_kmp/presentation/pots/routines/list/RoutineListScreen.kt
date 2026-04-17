@@ -28,6 +28,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kmp.edu.leafon_kmp.data.RepositorioRemoto
+import kmp.edu.leafon_kmp.data.RepositorioRemotoEmMemoria
 import kmp.edu.leafon_kmp.presentation.components.global.LeafOnColors
 import kmp.edu.leafon_kmp.presentation.components.layout.AppSidebar
 import kmp.edu.leafon_kmp.presentation.components.layout.AppTopBar
@@ -38,6 +40,7 @@ import kmp.edu.leafon_kmp.presentation.pots.routines.components.RoutineCard
 @Composable
 fun RoutineListScreen(
     potId: String,
+    repositorio: RepositorioRemoto = RepositorioRemotoEmMemoria(),
     onBackClick: () -> Unit,
     onCreateRoutineClick: (String) -> Unit,
     onHomeClick: () -> Unit = {},
@@ -47,8 +50,11 @@ fun RoutineListScreen(
     onNotificationsClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    val viewModel = remember(potId) {
-        RoutineListViewModel(potId = potId)
+    val viewModel = remember(potId, repositorio) {
+        RoutineListViewModel(
+            potId = potId,
+            repositorio = repositorio,
+        )
     }
 
     BoxWithConstraints(

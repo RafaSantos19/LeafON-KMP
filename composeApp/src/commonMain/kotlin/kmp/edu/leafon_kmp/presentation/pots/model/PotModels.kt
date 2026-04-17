@@ -8,6 +8,7 @@ data class PotUi(
     val humidityPercent: Int?,
     val temperatureCelsius: Int?,
     val lastUpdateLabel: String,
+    val deviceId: String = "",
 )
 
 enum class PotStatus {

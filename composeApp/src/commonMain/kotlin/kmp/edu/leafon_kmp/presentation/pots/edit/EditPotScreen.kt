@@ -23,6 +23,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import kmp.edu.leafon_kmp.data.RepositorioRemoto
+import kmp.edu.leafon_kmp.data.RepositorioRemotoEmMemoria
 import kmp.edu.leafon_kmp.presentation.components.global.LeafOnColors
 import kmp.edu.leafon_kmp.presentation.components.layout.AppSidebar
 import kmp.edu.leafon_kmp.presentation.components.layout.AppTopBar
@@ -35,15 +37,17 @@ fun EditPotScreen(
     potId: String,
     onBackClick: () -> Unit,
     onPotUpdated: () -> Unit,
+    repositorio: RepositorioRemoto = RepositorioRemotoEmMemoria(),
     onHomeClick: () -> Unit = onBackClick,
     onPotsClick: () -> Unit = onBackClick,
     onAlertsClick: () -> Unit = {},
     onProfileClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    val viewModel = remember(potId, onPotUpdated) {
+    val viewModel = remember(potId, repositorio, onPotUpdated) {
         EditPotViewModel(
             potId = potId,
+            repositorio = repositorio,
             onUpdated = onPotUpdated,
         )
     }

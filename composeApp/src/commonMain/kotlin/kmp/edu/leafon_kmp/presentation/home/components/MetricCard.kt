@@ -38,7 +38,7 @@ fun MetricCard(
                 .fillMaxWidth()
                 .padding(20.dp),
         ) {
-            // Label (ex: "Temperature")
+            // Label (ex: "Temperatura")
             Text(
                 text = metric.label,
                 fontSize = 14.sp,

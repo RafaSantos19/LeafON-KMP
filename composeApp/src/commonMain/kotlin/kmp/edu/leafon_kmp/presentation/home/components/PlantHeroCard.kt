@@ -63,7 +63,7 @@ fun PlantHeroCard(
                 // Umidade do solo em destaque
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text(
-                        text = "Soil Humidity: ",
+                        text = "Umidade do solo: ",
                         fontSize = 16.sp,
                         color = LeafOnColors.TextPrimary,
                     )
@@ -77,7 +77,7 @@ fun PlantHeroCard(
 
                 Spacer(Modifier.height(20.dp))
 
-                // Botão "Water Now" — apenas dispara o callback, sem lógica interna
+                // Botão de irrigação manual: apenas dispara o callback, sem lógica interna.
                 Button(
                     onClick = onWaterNowClick,
                     modifier = Modifier
@@ -90,7 +90,7 @@ fun PlantHeroCard(
                     ),
                 ) {
                     Text(
-                        text = "Water Now",
+                        text = "Irrigar agora",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                     )
@@ -126,11 +126,12 @@ fun PlantHeroCard(
  */
 @Composable
 fun HealthBadge(status: String) {
-    val bgColor = when (status.lowercase()) {
-        "healthy"  -> LeafOnColors.GreenPrimary
-        "warning"  -> LeafOnColors.Warning
-        "critical" -> LeafOnColors.Error
-        else       -> LeafOnColors.TextSecondary
+    val normalizedStatus = status.lowercase()
+    val bgColor = when (normalizedStatus) {
+        "healthy", "saudavel", "saudável" -> LeafOnColors.GreenPrimary
+        "warning", "atencao", "atenção" -> LeafOnColors.Warning
+        "critical", "critico", "crítico" -> LeafOnColors.Error
+        else -> LeafOnColors.TextSecondary
     }
     Box(
         modifier = Modifier

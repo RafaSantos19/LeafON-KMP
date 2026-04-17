@@ -58,7 +58,7 @@ fun AppSidebar(
     val items = listOf(
         SidebarItem(
             destination = SidebarDestination.HOME,
-            label = "Home",
+            label = "Início",
             icon = Icons.Outlined.Home,
             onClick = onHomeClick
         ),

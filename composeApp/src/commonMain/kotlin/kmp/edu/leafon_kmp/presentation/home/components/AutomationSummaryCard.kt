@@ -33,7 +33,7 @@ fun AutomationSummaryCard(
         Column(modifier = Modifier.padding(24.dp)) {
 
             Text(
-                text = "Automation Summary",
+                text = "Resumo da automação",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = LeafOnColors.TextPrimary,
@@ -45,14 +45,14 @@ fun AutomationSummaryCard(
 
             // Cada linha de detalhe é um composable próprio para evitar
             // repetição de código e garantir espaçamento consistente.
-            SummaryRow(label = "Mode",               value = summary.mode)
-            SummaryRow(label = "Next Watering",      value = summary.nextWatering)
+            SummaryRow(label = "Modo",               value = summary.mode)
+            SummaryRow(label = "Próxima irrigação", value = summary.nextWatering)
             SummaryRow(
-                label = "Humidity Threshold",
+                label = "Limite de umidade",
                 value = "${summary.humidityThreshold}%",
                 valueIsBold = true,
             )
-            SummaryRow(label = "Duration",           value = "${summary.durationSeconds} seconds")
+            SummaryRow(label = "Duração",           value = "${summary.durationSeconds} segundos")
         }
     }
 }

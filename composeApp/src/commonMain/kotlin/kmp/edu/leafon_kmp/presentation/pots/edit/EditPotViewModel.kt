@@ -29,7 +29,7 @@ class EditPotViewModel(
     }
 
     private fun loadPot(potId: String) {
-        val pot = repositorio.buscarPotPorId(potId)
+        val pot = repositorio.getPotById(potId)
 
         state = if (pot == null) {
             state.copy(
@@ -92,7 +92,7 @@ class EditPotViewModel(
             errorMessage = null,
         )
 
-        val currentPot = repositorio.buscarPotPorId(state.potId)
+        val currentPot = repositorio.getPotById(state.potId)
 
         if (currentPot == null) {
             state = state.copy(
@@ -102,7 +102,7 @@ class EditPotViewModel(
             return
         }
 
-        repositorio.atualizarPot(
+        repositorio.putPot(
             currentPot.copy(
                 name = potName,
                 plantType = plantName,

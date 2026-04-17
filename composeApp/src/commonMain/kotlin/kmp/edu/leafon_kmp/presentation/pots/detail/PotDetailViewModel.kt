@@ -31,7 +31,7 @@ class PotDetailViewModel(
     private fun loadPot() {
         state = state.copy(isLoading = true, errorMessage = null)
 
-        val pot = repositorio.buscarPotPorId(potId)
+        val pot = repositorio.getPotById(potId)
 
         state = if (pot == null) {
             state.copy(

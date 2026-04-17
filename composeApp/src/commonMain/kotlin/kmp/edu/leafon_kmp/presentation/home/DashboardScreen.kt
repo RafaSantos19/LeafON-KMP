@@ -331,7 +331,7 @@ private fun DashboardContent(
 
 private fun dashboardTopBarState(state: HomeState): AppTopBarState {
     val title = when (state.selectedDestination) {
-        SidebarDestination.HOME -> "Dashboard"
+        SidebarDestination.HOME -> "Início"
         SidebarDestination.PLANT_AND_POT -> "Planta & Vaso"
         SidebarDestination.ALERTS -> "Alertas"
         SidebarDestination.PROFILE -> "Perfil"
@@ -341,7 +341,7 @@ private fun dashboardTopBarState(state: HomeState): AppTopBarState {
         title = title,
         subject = state.dashboard.plantStatus.name,
         subjectOnline = state.dashboard.plantStatus.deviceOnline,
-        lastUpdateLabel = "Last update: ${state.dashboard.plantStatus.lastUpdate}",
+        lastUpdateLabel = "Última atualização: ${state.dashboard.plantStatus.lastUpdate}",
     )
 }
 
@@ -386,7 +386,7 @@ private fun DashboardLoadingState() {
             CircularProgressIndicator(color = LeafOnColors.GreenPrimary)
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = "Carregando dashboard...",
+                text = "Carregando página inicial...",
                 color = LeafOnColors.TextPrimary,
                 style = MaterialTheme.typography.bodyMedium,
             )
@@ -411,7 +411,7 @@ private fun DashboardErrorState(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
-                text = "Nao foi possivel carregar a home.",
+                text = "Não foi possível carregar a página inicial.",
                 style = MaterialTheme.typography.titleMedium,
                 color = LeafOnColors.TextPrimary,
                 fontWeight = FontWeight.SemiBold,

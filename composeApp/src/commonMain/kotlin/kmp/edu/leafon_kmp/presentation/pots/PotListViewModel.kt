@@ -29,14 +29,14 @@ class PotListViewModel(
 
     private fun refresh() {
         state = state.copy(
-            pots = repositorio.listarPots(),
+            pots = repositorio.getPots(),
             isLoading = false,
             errorMessage = null,
         )
     }
 
     private fun deletePot(id: String) {
-        repositorio.excluirPot(id)
+        repositorio.deletePot(id)
         refresh()
     }
 }

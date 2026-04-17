@@ -37,7 +37,7 @@ fun AlertListCard(
         Column(modifier = Modifier.padding(24.dp)) {
 
             Text(
-                text = "Recent Alerts",
+                text = "Alertas recentes",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = LeafOnColors.TextPrimary,
@@ -49,7 +49,7 @@ fun AlertListCard(
 
             if (alerts.isEmpty()) {
                 Text(
-                    text = "No alerts. Your plant is happy! 🌿",
+                    text = "Nenhum alerta. Sua planta está bem.",
                     fontSize = 13.sp,
                     color = LeafOnColors.TextSecondary,
                 )
@@ -106,7 +106,7 @@ private fun AlertLevelIndicator(level: AlertLevel) {
     // Inicial da severidade como label acessível dentro do círculo
     val label = when (level) {
         AlertLevel.CRITICAL -> "C"
-        AlertLevel.WARNING  -> "W"
+        AlertLevel.WARNING  -> "A"
         AlertLevel.INFO     -> "I"
     }
 

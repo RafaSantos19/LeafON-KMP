@@ -144,19 +144,19 @@ class RepositorioRemotoEmMemoria : RepositorioRemoto {
         ),
     )
 
-    override fun listarPots(): List<PotUi> {
+    override fun getPots(): List<PotUi> {
         return pots.toList()
     }
 
-    override fun buscarPotPorId(id: String): PotUi? {
+    override fun getPotById(id: String): PotUi? {
         return pots.firstOrNull { it.id == id }
     }
 
-    override fun criarPot(pot: PotUi) {
+    override fun postPot(pot: PotUi) {
         pots.add(pot)
     }
 
-    override fun atualizarPot(pot: PotUi) {
+    override fun putPot(pot: PotUi) {
         val index = pots.indexOfFirst { it.id == pot.id }
 
         if (index >= 0) {
@@ -164,7 +164,7 @@ class RepositorioRemotoEmMemoria : RepositorioRemoto {
         }
     }
 
-    override fun excluirPot(id: String) {
+    override fun deletePot(id: String) {
         pots.removeAll { it.id == id }
         rotinasPorPot.remove(id)
     }

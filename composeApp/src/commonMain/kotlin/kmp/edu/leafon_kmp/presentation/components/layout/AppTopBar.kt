@@ -14,12 +14,17 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -103,7 +108,11 @@ private fun ExpandedTopBar(
         )
 
         Spacer(Modifier.weight(1f))
-        ActionChip(label = "N", onClick = onNotificationsClick)
+        TopBarIconButton(
+            icon = Icons.Outlined.Notifications,
+            contentDescription = "Notificações",
+            onClick = onNotificationsClick,
+        )
         Spacer(Modifier.width(8.dp))
         ProfileAvatar(onProfileClick = onProfileClick)
     }
@@ -132,7 +141,11 @@ private fun CompactTopBar(
                 color = LeafOnColors.TextPrimary,
             )
             Spacer(Modifier.weight(1f))
-            ActionChip(label = "N", onClick = onNotificationsClick)
+            TopBarIconButton(
+                icon = Icons.Outlined.Notifications,
+                contentDescription = "Notificações",
+                onClick = onNotificationsClick,
+            )
             Spacer(Modifier.width(8.dp))
             ProfileAvatar(onProfileClick = onProfileClick)
         }
@@ -163,8 +176,9 @@ private fun CompactTopBar(
 }
 
 @Composable
-private fun ActionChip(
-    label: String,
+private fun TopBarIconButton(
+    icon: ImageVector,
+    contentDescription: String,
     onClick: () -> Unit,
 ) {
     Box(
@@ -174,11 +188,11 @@ private fun ActionChip(
             .clickable { onClick() },
         contentAlignment = Alignment.Center,
     ) {
-        Text(
-            text = label,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold,
-            color = LeafOnColors.TextPrimary,
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            tint = LeafOnColors.TextPrimary,
+            modifier = Modifier.size(20.dp),
         )
     }
 }
@@ -195,11 +209,11 @@ private fun ProfileAvatar(
             .clickable { onProfileClick() },
         contentAlignment = Alignment.Center,
     ) {
-        Text(
-            text = "U",
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold,
-            color = LeafOnColors.TextSecondary,
+        Icon(
+            imageVector = Icons.Outlined.Person,
+            contentDescription = "Perfil",
+            tint = LeafOnColors.TextSecondary,
+            modifier = Modifier.size(22.dp),
         )
     }
 }

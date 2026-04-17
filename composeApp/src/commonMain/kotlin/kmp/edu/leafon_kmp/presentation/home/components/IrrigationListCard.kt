@@ -37,7 +37,7 @@ fun IrrigationListCard(
     ) {
         Column(modifier = Modifier.padding(24.dp)) {
             Text(
-                text = "Recent Irrigations",
+                text = "Irrigações recentes",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = LeafOnColors.TextPrimary,
@@ -49,7 +49,7 @@ fun IrrigationListCard(
 
             if (irrigations.isEmpty()) {
                 Text(
-                    text = "No irrigations recorded yet.",
+                    text = "Nenhuma irrigação registrada ainda.",
                     fontSize = 13.sp,
                     color = LeafOnColors.TextSecondary,
                 )

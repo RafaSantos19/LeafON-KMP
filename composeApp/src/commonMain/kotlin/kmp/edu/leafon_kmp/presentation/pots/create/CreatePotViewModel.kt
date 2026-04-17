@@ -69,7 +69,7 @@ class CreatePotViewModel(
             errorMessage = null,
         )
 
-        repositorio.criarPot(
+        repositorio.postPot(
             PotUi(
                 id = generatePotId(),
                 name = potName,
@@ -88,7 +88,7 @@ class CreatePotViewModel(
 
     private fun generatePotId(): String {
         val lastNumericId = repositorio
-            .listarPots()
+            .getPots()
             .mapNotNull { it.id.toLongOrNull() }
             .maxOrNull() ?: 0L
 

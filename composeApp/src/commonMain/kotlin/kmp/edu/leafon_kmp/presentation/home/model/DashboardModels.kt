@@ -82,29 +82,29 @@ enum class AlertLevel { INFO, WARNING, CRITICAL }
 fun dashboardPreviewState() = DashboardUiState(
     plantStatus = PlantStatusUi(
         name = "Aloe Vera",
-        healthStatus = "Healthy",
+        healthStatus = "Saudável",
         soilHumidity = 28,
-        lastUpdate = "5 mins ago",
+        lastUpdate = "5 min atrás",
         deviceOnline = true,
     ),
     metrics = listOf(
-        MetricUi("Temperature", "24", "°C"),
-        MetricUi("Soil Humidity", "28", "%"),
-        MetricUi("Light Level", "3,200", "lux"),
+        MetricUi("Temperatura", "24", "°C"),
+        MetricUi("Umidade do solo", "28", "%"),
+        MetricUi("Luminosidade", "3.200", "lux"),
     ),
     automationSummary = AutomationSummaryUi(
-        mode = "Automatic",
-        nextWatering = "3:00 PM",
+        mode = "Automático",
+        nextWatering = "15:00",
         humidityThreshold = 30,
         durationSeconds = 20,
     ),
     recentIrrigations = listOf(
-        IrrigationUi("Today - 10:15 AM", "Auto"),
-        IrrigationUi("Yesterday - 5:30 PM", "Manual"),
-        IrrigationUi("Apr 14 - 8:00 AM", "Routine"),
+        IrrigationUi("Hoje - 10:15", "Automática"),
+        IrrigationUi("Ontem - 17:30", "Manual"),
+        IrrigationUi("14 abr - 08:00", "Rotina"),
     ),
     recentAlerts = listOf(
-        AlertUi("Low Soil Humidity", "Today, 8:45 AM", AlertLevel.CRITICAL),
-        AlertUi("High Temperature", "Apr 16, 2:10 PM", AlertLevel.WARNING),
+        AlertUi("Baixa umidade do solo", "Hoje, 08:45", AlertLevel.CRITICAL),
+        AlertUi("Temperatura alta", "16 abr, 14:10", AlertLevel.WARNING),
     ),
 )

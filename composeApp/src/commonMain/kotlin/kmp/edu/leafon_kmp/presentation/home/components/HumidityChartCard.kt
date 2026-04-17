@@ -25,9 +25,9 @@ import kmp.edu.leafon_kmp.presentation.components.global.LeafOnColors
 
 enum class ChartRange(val label: String) {
     H24("24h"),
-    D7("7d"),
-    D15("15d"),
-    D30("30d"),
+    D7("7 dias"),
+    D15("15 dias"),
+    D30("30 dias"),
 }
 
 @Composable
@@ -49,7 +49,7 @@ fun HumidityChartCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text(
-                    text = "Humidity History",
+                    text = "Histórico de umidade",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = LeafOnColors.TextPrimary,
@@ -123,12 +123,12 @@ private fun ChartPlaceholder() {
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                text = "Chart goes here",
+                text = "O gráfico será exibido aqui",
                 fontSize = 14.sp,
                 color = LeafOnColors.TextSecondary,
             )
             Text(
-                text = "Integrate Vico or Canvas-based chart",
+                text = "Integração futura com Vico ou Canvas",
                 fontSize = 12.sp,
                 color = LeafOnColors.TextSecondary.copy(alpha = 0.6f),
             )

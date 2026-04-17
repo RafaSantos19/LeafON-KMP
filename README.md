@@ -1,6 +1,32 @@
-# LeafON KMP
+# Leaf.ON KMP
 
-Projeto Kotlin Multiplatform com Compose Multiplatform, organizado para compartilhar a maior parte da UI e da logica entre Android, Desktop (JVM) e Web.
+Projeto Kotlin Multiplatform com Compose Multiplatform. O app Leaf.ON centraliza telas de autenticacao, home, perfil e gerenciamento de Smart Pots, incluindo listagem, cadastro, edicao, detalhe, rotinas e alertas.
+
+projeto **Leaf.ON**, um sistema inteligente de monitoramento ambiental para estufas e hortas urbanas.
+
+## Integrates
+- Rafael Ferreira dos Santos
+- Miguel Gomes de Lima Coyado Vieira
+
+---
+
+## Visão Geral
+O **Leaf.ON** integra dispositivos de Internet das Coisas (IoT) com aplicações multiplataforma para automatizar a coleta de dados ambientais (temperatura, umidade, luminosidade) e o controle de irrigação.
+
+- **Objetivo Geral:** Desenvolver um ecossistema integrado para monitoramento, armazenamento e análise de dados de estufas inteligentes.
+- **Público-alvo:** Pequenos produtores e entusiastas de agricultura urbana.
+- **Diferencial:** Solução acessível que une hardware (ESP32) e software multiplataforma (Mobile, Web, Desktop) com análise preditiva básica.
+
+
+## Estado atual
+
+- Kotlin Multiplatform + Compose Multiplatform.
+- Targets configurados: Android, Desktop JVM, JavaScript e Wasm.
+- UI compartilhada em `commonMain`.
+- Navegacao com Navigation3 usando destinos tipados.
+- Feature principal: CRUD local em memoria de Smart Pots.
+- Camada `data` com `RepositorioRemoto` e `RepositorioRemotoEmMemoria`, simulando operacoes REST localmente.
+- Backend real ainda nao integrado.
 
 ## Estrutura atual do projeto
 
@@ -11,15 +37,38 @@ LeafON-KMP/
 |   `-- src/
 |       |-- commonMain/
 |       |   |-- composeResources/
+|       |   |   |-- drawable/
+|       |   |   |-- files/
+|       |   |   `-- font/
 |       |   `-- kotlin/kmp/edu/leafon_kmp/
 |       |       |-- App.kt
 |       |       |-- Platform.kt
+|       |       |-- core/
+|       |       |-- data/
+|       |       |   |-- RepositorioRemoto.kt
+|       |       |   `-- RepositorioRemotoEmMemoria.kt
+|       |       |-- domain/
 |       |       `-- presentation/
-|       |           |-- navigation/
+|       |           |-- components/
+|       |           |   |-- global/
+|       |           |   `-- layout/
 |       |           |-- home/
+|       |           |   |-- components/
+|       |           |   `-- model/
 |       |           |-- login/
-|       |           |-- register/
-|       |           `-- profile/
+|       |           |-- navigation/
+|       |           |   |-- AppDestination.kt
+|       |           |   `-- AppNavigator.kt
+|       |           |-- pots/
+|       |           |   |-- alerts/
+|       |           |   |-- components/
+|       |           |   |-- create/
+|       |           |   |-- detail/
+|       |           |   |-- edit/
+|       |           |   |-- model/
+|       |           |   `-- routines/
+|       |           |-- profile/
+|       |           `-- register/
 |       |-- commonTest/
 |       |   `-- kotlin/
 |       |-- androidMain/
@@ -53,108 +102,148 @@ LeafON-KMP/
 `-- gradlew.bat
 ```
 
-### Resumo das pastas principais
+## Organizacao das principais pastas
 
-- `composeApp/`: modulo principal da aplicacao e onde estao os targets multiplataforma.
+- `composeApp/`: modulo principal da aplicacao multiplataforma.
 - `composeApp/src/commonMain/`: codigo compartilhado entre Android, Desktop e Web.
-- `composeApp/src/androidMain/`: implementacoes especificas do Android.
-- `composeApp/src/jvmMain/`: entrada e codigo especifico da versao Desktop.
-- `composeApp/src/jsMain/`: adaptacoes do target JavaScript.
-- `composeApp/src/wasmJsMain/`: adaptacoes do target WebAssembly.
-- `composeApp/src/webMain/`: ponto de entrada web e recursos estaticos.
-- `gradle/`: configuracoes do Gradle Wrapper e catalogo de dependencias.
+- `data/`: contrato e implementacao local do repositorio usado pelo app.
+- `presentation/navigation/`: destinos tipados e centralizacao da navegacao com Navigation3.
+- `presentation/components/`: componentes globais e layout compartilhado, como top bar e sidebar.
+- `presentation/home/`: tela inicial/dashboard e seus componentes.
+- `presentation/login/` e `presentation/register/`: telas de autenticacao.
+- `presentation/pots/`: feature de Smart Pots com lista, formulario, detalhe, rotinas e alertas.
+- `presentation/profile/`: tela de perfil.
+- `androidMain/`: entrada e recursos especificos do Android.
+- `jvmMain/`: entrada da aplicacao Desktop JVM.
+- `jsMain/`, `wasmJsMain/` e `webMain/`: targets web.
 
 ## Requisitos
 
 Antes de executar o projeto, tenha no ambiente:
 
-- JDK 11 ou superior.
+- JDK 17 ou superior.
 - Android Studio para rodar a versao Android.
-- SDK do Android configurado localmente.
-- Um navegador moderno para a versao Web.
+- Android SDK configurado localmente.
+- Navegador moderno para rodar os targets Web.
 
-## Como rodar o projeto
+No Windows, execute os comandos com `.\gradlew.bat`. No macOS/Linux, use `./gradlew`.
 
-Os comandos abaixo usam o Gradle Wrapper do repositorio.
+## Como rodar
 
 ### Android
 
-Para gerar o build de desenvolvimento:
-
-- Windows
+Gerar o build debug:
 
 ```powershell
 .\gradlew.bat :composeApp:assembleDebug
 ```
 
-- macOS/Linux
+macOS/Linux:
 
 ```bash
 ./gradlew :composeApp:assembleDebug
 ```
 
-Para executar no dispositivo ou emulador, a forma mais pratica e abrir o projeto no Android Studio e rodar a configuracao do modulo Android.
+Para instalar em dispositivo ou emulador Android:
 
-### Desktop (JVM)
+```powershell
+.\gradlew.bat :composeApp:installDebug
+```
 
-Executa a aplicacao desktop localmente:
+macOS/Linux:
 
-- Windows
+```bash
+./gradlew :composeApp:installDebug
+```
+
+Tambem e possivel abrir o projeto no Android Studio e executar o modulo Android pela IDE.
+
+### Desktop JVM
+
+Executar a aplicacao desktop:
 
 ```powershell
 .\gradlew.bat :composeApp:run
 ```
 
-- macOS/Linux
+macOS/Linux:
 
 ```bash
 ./gradlew :composeApp:run
 ```
 
-Se precisar gerar instaladores nativos, o modulo tambem esta configurado para distribuir `Dmg`, `Msi` e `Deb`.
+Alternativa direta do target JVM:
 
-### Web
+```powershell
+.\gradlew.bat :composeApp:jvmRun
+```
 
-O projeto possui dois targets web:
+Gerar pacote nativo para o sistema atual:
 
-- `wasmJs`: versao WebAssembly, preferencial para navegadores modernos.
-- `js`: versao JavaScript, util para compatibilidade adicional.
+```powershell
+.\gradlew.bat :composeApp:packageDistributionForCurrentOS
+```
 
-#### Web com Wasm
+O projeto tambem possui tasks para `packageDmg`, `packageMsi` e `packageDeb`.
 
-- Windows
+### Web com Wasm
+
+Executar servidor de desenvolvimento WebAssembly:
 
 ```powershell
 .\gradlew.bat :composeApp:wasmJsBrowserDevelopmentRun
 ```
 
-- macOS/Linux
+macOS/Linux:
 
 ```bash
 ./gradlew :composeApp:wasmJsBrowserDevelopmentRun
 ```
 
-#### Web com JavaScript
+### Web com JavaScript
 
-- Windows
+Executar servidor de desenvolvimento JavaScript:
 
 ```powershell
 .\gradlew.bat :composeApp:jsBrowserDevelopmentRun
 ```
 
-- macOS/Linux
+macOS/Linux:
 
 ```bash
 ./gradlew :composeApp:jsBrowserDevelopmentRun
 ```
 
+## Comandos de validacao
+
+Compilar o target Desktop JVM:
+
+```powershell
+.\gradlew.bat --no-daemon :composeApp:compileKotlinJvm
+```
+
+Rodar verificacoes gerais do Gradle:
+
+```powershell
+.\gradlew.bat :composeApp:check
+```
+
+Listar todas as tasks disponiveis:
+
+```powershell
+.\gradlew.bat :composeApp:tasks --all
+```
+
 ## Observacoes
 
-- A entrada da versao Android fica em `composeApp/src/androidMain/kotlin/kmp/edu/leafon_kmp/MainActivity.kt`.
-- A entrada da versao Desktop fica em `composeApp/src/jvmMain/kotlin/kmp/edu/leafon_kmp/main.kt`.
-- A entrada da versao Web fica em `composeApp/src/webMain/kotlin/kmp/edu/leafon_kmp/main.kt`.
-- Os estilos e recursos HTML/CSS da Web ficam em `composeApp/src/webMain/resources/`.
+- O CRUD de Smart Pots usa dados locais em memoria.
+- `RepositorioRemoto` expoe metodos com semantica REST (`GET`, `POST`, `PUT`, `DELETE`), mas ainda nao faz chamadas HTTP reais.
+- A navegacao atual usa Navigation3 com `NavDisplay`, `NavEntry`, `AppDestination` e `AppNavigator`.
+- O backend real e a persistencia permanente ainda nao foram implementados.
 
-## Observacao sobre validacao
 
-Os comandos foram documentados com base na configuracao atual do Gradle do projeto. Neste ambiente eu nao consegui executar o wrapper ate o fim porque o download da distribuicao do Gradle depende de rede, que esta bloqueada no sandbox.
+## Links
+
+- Repositórios do projeto: [Frontend](https://github.com/RafaSantos19/LeafON-KMP)
+- Repositórios do projeto: [Backend](https://github.com/RafaSantos19/LeafON-API)
+- Documentação do Projeto (Parcial): [Link do Docs](https://docs.google.com/document/d/1GGbEGgVE6KhAxyz87omWVD5X1HY0fGU79IRKmRMV-Ec/edit?usp=sharing)

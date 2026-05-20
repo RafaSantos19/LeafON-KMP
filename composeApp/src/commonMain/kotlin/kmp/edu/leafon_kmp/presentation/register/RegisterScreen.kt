@@ -55,6 +55,7 @@ private val RegisterBgSecondary = Color(0xFFF5F5F5)
 private val RegisterTextOnDark = Color(0xFFFFFFFF)
 private val RegisterTextMuted = Color(0xB3FFFFFF)
 private val RegisterErrorRed = Color(0xFFE53935)
+private val RegisterInfoGreen = Color(0xFFC8E6C9)
 private val RegisterPlaceholderGray = Color(0xFF9E9E9E)
 private val RegisterFieldText = Color(0xFF212121)
 
@@ -352,6 +353,18 @@ private fun RegisterForm(
             Text(
                 text = state.error,
                 color = RegisterErrorRed,
+                fontSize = 13.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 12.dp)
+            )
+        }
+
+        if (state.infoMessage != null) {
+            Text(
+                text = state.infoMessage,
+                color = RegisterInfoGreen,
                 fontSize = 13.sp,
                 textAlign = TextAlign.Center,
                 modifier = Modifier

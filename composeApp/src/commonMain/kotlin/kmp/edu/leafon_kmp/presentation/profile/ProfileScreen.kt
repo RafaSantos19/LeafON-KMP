@@ -2,7 +2,6 @@ package kmp.edu.leafon_kmp.presentation.profile
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -18,7 +17,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -29,32 +27,23 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.runtime.collectAsState
 import kmp.edu.leafon_kmp.presentation.components.global.LeafOnColors
 
 @Composable
@@ -63,18 +52,12 @@ fun ProfileScreen(
     onLoggedOut: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState = viewModel.state.collectAsState().value
 
     ProfileContent(
         uiState = uiState,
-        onFirstNameChange = viewModel::onFirstNameChange,
-        onLastNameChange = viewModel::onLastNameChange,
-        onEmailChange = viewModel::onEmailChange,
+        onNameChange = viewModel::onNameChange,
         onPhoneChange = viewModel::onPhoneChange,
-        onGenderChange = viewModel::onGenderChange,
-        onCurrentPasswordChange = viewModel::onCurrentPasswordChange,
-        onNewPasswordChange = viewModel::onNewPasswordChange,
-        onConfirmPasswordChange = viewModel::onConfirmPasswordChange,
         onSaveClick = viewModel::saveChanges,
         onDiscardClick = viewModel::discardChanges,
         onLogoutClick = { viewModel.logout(onLoggedOut) },
@@ -85,14 +68,8 @@ fun ProfileScreen(
 @Composable
 private fun ProfileContent(
     uiState: ProfileUiState,
-    onFirstNameChange: (String) -> Unit,
-    onLastNameChange: (String) -> Unit,
-    onEmailChange: (String) -> Unit,
+    onNameChange: (String) -> Unit,
     onPhoneChange: (String) -> Unit,
-    onGenderChange: (String) -> Unit,
-    onCurrentPasswordChange: (String) -> Unit,
-    onNewPasswordChange: (String) -> Unit,
-    onConfirmPasswordChange: (String) -> Unit,
     onSaveClick: () -> Unit,
     onDiscardClick: () -> Unit,
     onLogoutClick: () -> Unit,
@@ -114,7 +91,7 @@ private fun ProfileContent(
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
             ProfileHeader(
-                fullName = uiState.fullName,
+                name = uiState.name,
                 hasChanges = uiState.hasUnsavedChanges,
                 compact = compact,
             )
@@ -133,17 +110,8 @@ private fun ProfileContent(
                     PersonalInformationCard(
                         uiState = uiState,
                         compact = true,
-                        onFirstNameChange = onFirstNameChange,
-                        onLastNameChange = onLastNameChange,
-                        onEmailChange = onEmailChange,
+                        onNameChange = onNameChange,
                         onPhoneChange = onPhoneChange,
-                        onGenderChange = onGenderChange,
-                    )
-                    PasswordSecurityCard(
-                        uiState = uiState,
-                        onCurrentPasswordChange = onCurrentPasswordChange,
-                        onNewPasswordChange = onNewPasswordChange,
-                        onConfirmPasswordChange = onConfirmPasswordChange,
                     )
                     BottomActionsCard(
                         compact = true,
@@ -172,17 +140,8 @@ private fun ProfileContent(
                         PersonalInformationCard(
                             uiState = uiState,
                             compact = false,
-                            onFirstNameChange = onFirstNameChange,
-                            onLastNameChange = onLastNameChange,
-                            onEmailChange = onEmailChange,
+                            onNameChange = onNameChange,
                             onPhoneChange = onPhoneChange,
-                            onGenderChange = onGenderChange,
-                        )
-                        PasswordSecurityCard(
-                            uiState = uiState,
-                            onCurrentPasswordChange = onCurrentPasswordChange,
-                            onNewPasswordChange = onNewPasswordChange,
-                            onConfirmPasswordChange = onConfirmPasswordChange,
                         )
                         BottomActionsCard(
                             compact = false,
@@ -200,15 +159,15 @@ private fun ProfileContent(
 
 @Composable
 private fun ProfileHeader(
-    fullName: String,
+    name: String,
     hasChanges: Boolean,
     compact: Boolean,
 ) {
-    val title = fullName.ifBlank { "Seu perfil" }
+    val title = name.ifBlank { "Seu perfil" }
     val subtitle = if (hasChanges) {
         "Voce possui alteracoes pendentes para revisar."
     } else {
-        "Mantenha seus dados pessoais e credenciais atualizados."
+        "Mantenha seus dados pessoais atualizados."
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -269,6 +228,7 @@ private fun ProfileStatusBanner(
     compact: Boolean,
 ) {
     val message = when {
+        uiState.isLoading -> "Carregando dados do perfil..."
         uiState.errorMessage != null -> uiState.errorMessage
         uiState.saveSuccess -> "Alteracoes salvas com sucesso."
         uiState.hasUnsavedChanges -> "Revise os dados e clique em salvar para aplicar as mudancas."
@@ -276,12 +236,14 @@ private fun ProfileStatusBanner(
     }
 
     val containerColor = when {
+        uiState.isLoading -> LeafOnColors.BgMain
         uiState.errorMessage != null -> LeafOnColors.Error.copy(alpha = 0.08f)
         uiState.saveSuccess -> LeafOnColors.BgSoftGreen
         else -> LeafOnColors.BgMain
     }
 
     val contentColor = when {
+        uiState.isLoading -> LeafOnColors.TextSecondary
         uiState.errorMessage != null -> LeafOnColors.Error
         uiState.saveSuccess -> LeafOnColors.Success
         uiState.hasUnsavedChanges -> LeafOnColors.TextPrimary
@@ -333,7 +295,7 @@ private fun ProfileSummaryCard(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = uiState.fullName.take(1).ifBlank { "U" }.uppercase(),
+                        text = uiState.name.take(1).ifBlank { "U" }.uppercase(),
                         fontSize = 32.sp,
                         fontWeight = FontWeight.Bold,
                         color = LeafOnColors.GreenPrimary,
@@ -341,7 +303,7 @@ private fun ProfileSummaryCard(
                 }
 
                 Text(
-                    text = uiState.fullName.ifBlank { "Usuario sem nome" },
+                    text = uiState.name.ifBlank { "Usuario sem nome" },
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     color = LeafOnColors.TextPrimary,
@@ -361,21 +323,12 @@ private fun ProfileSummaryCard(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 SummaryPill(title = "Telefone", value = uiState.phone.ifBlank { "Nao informado" })
-                SummaryPill(title = "Genero", value = uiState.gender)
-                SummaryPill(
-                    title = "Senha",
-                    value = if (uiState.newPasswordValid) "Atualizacao pronta" else "Sem alteracao",
-                )
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 SummaryMetric(
                     title = "Dados pessoais",
                     value = profileCompletion(uiState),
-                )
-                SummaryMetric(
-                    title = "Seguranca",
-                    value = if (uiState.newPasswordValid && uiState.passwordsMatch) "Validada" else "A revisar",
                 )
                 SummaryMetric(
                     title = "Pendencias",
@@ -403,61 +356,38 @@ private fun ProfileSummaryCard(
 private fun PersonalInformationCard(
     uiState: ProfileUiState,
     compact: Boolean,
-    onFirstNameChange: (String) -> Unit,
-    onLastNameChange: (String) -> Unit,
-    onEmailChange: (String) -> Unit,
+    onNameChange: (String) -> Unit,
     onPhoneChange: (String) -> Unit,
-    onGenderChange: (String) -> Unit,
 ) {
     ProfileSectionCard(
         title = "Informacoes pessoais",
         subtitle = "Atualize os dados usados na identificacao e no contato principal.",
     ) {
-        GenderSelector(
-            selected = uiState.gender,
-            onGenderChange = onGenderChange,
-        )
-
         if (compact) {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 ProfileInfoField(
                     label = "Nome",
-                    value = uiState.firstName,
-                    onValueChange = onFirstNameChange,
+                    value = uiState.name,
+                    onValueChange = onNameChange,
                     showEditIcon = false,
-                )
-                ProfileInfoField(
-                    label = "Sobrenome",
-                    value = uiState.lastName,
-                    onValueChange = onLastNameChange,
                 )
             }
         } else {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                ProfileInfoField(
-                    label = "Nome",
-                    value = uiState.firstName,
-                    onValueChange = onFirstNameChange,
-                    showEditIcon = false,
-                    modifier = Modifier.weight(1f),
-                )
-                ProfileInfoField(
-                    label = "Sobrenome",
-                    value = uiState.lastName,
-                    onValueChange = onLastNameChange,
-                    modifier = Modifier.weight(1f),
-                )
-            }
+            ProfileInfoField(
+                label = "Nome",
+                value = uiState.name,
+                onValueChange = onNameChange,
+                showEditIcon = false,
+            )
         }
 
         ProfileInfoField(
             label = "Email",
             value = uiState.email,
-            onValueChange = onEmailChange,
+            onValueChange = {},
             keyboardType = KeyboardType.Email,
+            enabled = false,
+            showEditIcon = false,
         )
 
         ProfileInfoField(
@@ -465,44 +395,6 @@ private fun PersonalInformationCard(
             value = uiState.phone,
             onValueChange = onPhoneChange,
             keyboardType = KeyboardType.Phone,
-        )
-    }
-}
-
-@Composable
-private fun PasswordSecurityCard(
-    uiState: ProfileUiState,
-    onCurrentPasswordChange: (String) -> Unit,
-    onNewPasswordChange: (String) -> Unit,
-    onConfirmPasswordChange: (String) -> Unit,
-) {
-    ProfileSectionCard(
-        title = "Senha e seguranca",
-        subtitle = "Use pelo menos 8 caracteres e confirme a nova senha antes de salvar.",
-    ) {
-        PasswordHints(
-            currentPasswordFilled = uiState.currentPasswordFilled,
-            newPasswordValid = uiState.newPasswordValid,
-            passwordsMatch = uiState.passwordsMatch,
-        )
-
-        PasswordField(
-            label = "Senha atual",
-            value = uiState.currentPassword,
-            onValueChange = onCurrentPasswordChange,
-            isValid = uiState.currentPasswordFilled,
-        )
-        PasswordField(
-            label = "Nova senha",
-            value = uiState.newPassword,
-            onValueChange = onNewPasswordChange,
-            isValid = uiState.newPasswordValid,
-        )
-        PasswordField(
-            label = "Confirmar nova senha",
-            value = uiState.confirmPassword,
-            onValueChange = onConfirmPasswordChange,
-            isValid = uiState.passwordsMatch,
         )
     }
 }
@@ -685,71 +577,13 @@ private fun ProfileSectionCard(
 }
 
 @Composable
-private fun GenderSelector(
-    selected: String,
-    onGenderChange: (String) -> Unit,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text(
-            text = "Genero",
-            fontSize = 13.sp,
-            color = LeafOnColors.TextSecondary,
-        )
-
-        FlowRow(
-            modifier = Modifier.selectableGroup(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            listOf("Male" to "Masculino", "Female" to "Feminino").forEach { (value, label) ->
-                GenderChip(
-                    selected = selected == value,
-                    label = label,
-                    onClick = { onGenderChange(value) },
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun GenderChip(
-    selected: Boolean,
-    label: String,
-    onClick: () -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .clip(RoundedCornerShape(14.dp))
-            .background(if (selected) LeafOnColors.BgSoftGreen else LeafOnColors.BgSecondary)
-            .clickable { onClick() }
-            .padding(horizontal = 14.dp, vertical = 10.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        RadioButton(
-            selected = selected,
-            onClick = null,
-            colors = RadioButtonDefaults.colors(
-                selectedColor = LeafOnColors.GreenPrimary,
-                unselectedColor = LeafOnColors.BorderDefault,
-            ),
-        )
-        Text(
-            text = label,
-            fontSize = 14.sp,
-            color = LeafOnColors.TextPrimary,
-        )
-    }
-}
-
-@Composable
 fun ProfileInfoField(
     label: String,
     value: String,
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
     keyboardType: KeyboardType = KeyboardType.Text,
+    enabled: Boolean = true,
     showEditIcon: Boolean = true,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -763,10 +597,11 @@ fun ProfileInfoField(
             value = value,
             onValueChange = onValueChange,
             singleLine = true,
+            enabled = enabled,
             shape = RoundedCornerShape(12.dp),
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
-            trailingIcon = if (showEditIcon) {
+            trailingIcon = if (showEditIcon && enabled) {
                 {
                     Text(
                         text = "Edit",
@@ -774,66 +609,8 @@ fun ProfileInfoField(
                         color = LeafOnColors.TextSecondary,
                     )
                 }
-            } else null,
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = LeafOnColors.BgMain,
-                unfocusedContainerColor = LeafOnColors.BgMain,
-                focusedBorderColor = LeafOnColors.GreenHover,
-                unfocusedBorderColor = LeafOnColors.BorderDefault,
-                focusedTextColor = LeafOnColors.TextPrimary,
-                unfocusedTextColor = LeafOnColors.TextPrimary,
-                focusedTrailingIconColor = LeafOnColors.GreenPrimary,
-            ),
-        )
-    }
-}
-
-@Composable
-fun PasswordField(
-    label: String,
-    value: String,
-    onValueChange: (String) -> Unit,
-    isValid: Boolean,
-    modifier: Modifier = Modifier,
-) {
-    var visible by remember { mutableStateOf(false) }
-    val statusColor = if (value.isNotEmpty() && isValid) LeafOnColors.Success else LeafOnColors.TextSecondary
-    val visibilityLabel = if (visible) "Hide" else "Show"
-
-    Column(modifier = modifier.fillMaxWidth()) {
-        Text(
-            text = label,
-            fontSize = 13.sp,
-            color = LeafOnColors.TextSecondary,
-            modifier = Modifier.padding(bottom = 6.dp),
-        )
-        OutlinedTextField(
-            value = value,
-            onValueChange = onValueChange,
-            singleLine = true,
-            visualTransformation = if (visible) VisualTransformation.None else PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            shape = RoundedCornerShape(12.dp),
-            modifier = Modifier.fillMaxWidth(),
-            trailingIcon = {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(10.dp)
-                            .clip(CircleShape)
-                            .background(statusColor),
-                    )
-                    Text(
-                        text = visibilityLabel,
-                        fontSize = 12.sp,
-                        color = LeafOnColors.TextSecondary,
-                        modifier = Modifier
-                            .clickable { visible = !visible },
-                    )
-                }
+            } else {
+                null
             },
             colors = OutlinedTextFieldDefaults.colors(
                 focusedContainerColor = LeafOnColors.BgMain,
@@ -842,46 +619,13 @@ fun PasswordField(
                 unfocusedBorderColor = LeafOnColors.BorderDefault,
                 focusedTextColor = LeafOnColors.TextPrimary,
                 unfocusedTextColor = LeafOnColors.TextPrimary,
+                focusedTrailingIconColor = LeafOnColors.GreenPrimary,
+                disabledContainerColor = LeafOnColors.BgSecondary,
+                disabledBorderColor = LeafOnColors.BorderDefault,
+                disabledTextColor = LeafOnColors.TextSecondary,
             ),
         )
     }
-}
-
-@Composable
-private fun PasswordHints(
-    currentPasswordFilled: Boolean,
-    newPasswordValid: Boolean,
-    passwordsMatch: Boolean,
-) {
-    FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        SecurityHint(
-            text = "Senha atual preenchida",
-            active = currentPasswordFilled,
-        )
-        SecurityHint(
-            text = "Minimo de 8 caracteres",
-            active = newPasswordValid,
-        )
-        SecurityHint(
-            text = "Confirmacao confere",
-            active = passwordsMatch,
-        )
-    }
-}
-
-@Composable
-private fun SecurityHint(
-    text: String,
-    active: Boolean,
-) {
-    SurfaceTag(
-        text = text,
-        containerColor = if (active) LeafOnColors.BgSoftGreen else LeafOnColors.BgSecondary,
-        contentColor = if (active) LeafOnColors.GreenPrimary else LeafOnColors.TextSecondary,
-    )
 }
 
 @Composable
@@ -957,12 +701,10 @@ private fun SurfaceTag(
 
 private fun profileCompletion(uiState: ProfileUiState): String {
     val fields = listOf(
-        uiState.firstName,
-        uiState.lastName,
+        uiState.name,
         uiState.email,
         uiState.phone,
     )
     val filled = fields.count { it.isNotBlank() }
-    return "$filled/4 campos"
+    return "$filled/3 campos"
 }
-

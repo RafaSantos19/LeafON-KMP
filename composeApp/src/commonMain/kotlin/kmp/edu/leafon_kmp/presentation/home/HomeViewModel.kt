@@ -4,15 +4,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import kmp.edu.leafon_kmp.presentation.components.layout.SidebarDestination
-import kmp.edu.leafon_kmp.presentation.home.model.dashboardPreviewState
+import kmp.edu.leafon_kmp.presentation.home.model.IrrigationUi
 
 class HomeViewModel {
 
-    var state by mutableStateOf(
-        HomeState(
-            dashboard = dashboardPreviewState(),
-        )
-    )
+    var state by mutableStateOf(HomeState())
         private set
 
     fun onAction(action: HomeAction) {
@@ -32,32 +28,33 @@ class HomeViewModel {
 
     private fun retry() {
         state = state.copy(
-            dashboard = dashboardPreviewState().copy(
+            dashboard = state.dashboard.copy(
                 isLoading = false,
-                errorMessage = null
-            )
+                errorMessage = null,
+            ),
         )
     }
 
     private fun triggerManualWatering() {
         val current = state.dashboard
+
+        if (current.plantStatus.name.isBlank()) return
+
         state = state.copy(
             dashboard = current.copy(
                 recentIrrigations = listOf(
                     current.recentIrrigations.firstOrNull()?.copy(
                         timestamp = "Agora mesmo",
-                        type = "Manual"
-                    ) ?: current.plantStatus.let {
-                        kmp.edu.leafon_kmp.presentation.home.model.IrrigationUi(
-                            timestamp = "Agora mesmo",
-                            type = "Manual"
-                        )
-                    }
+                        type = "Manual",
+                    ) ?: IrrigationUi(
+                        timestamp = "Agora mesmo",
+                        type = "Manual",
+                    )
                 ) + current.recentIrrigations,
                 plantStatus = current.plantStatus.copy(
-                    lastUpdate = "Agora mesmo"
-                )
-            )
+                    lastUpdate = "Agora mesmo",
+                ),
+            ),
         )
     }
 }

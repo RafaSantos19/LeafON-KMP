@@ -2,12 +2,17 @@ package kmp.edu.leafon_kmp
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.ui.NavDisplay
-import kmp.edu.leafon_kmp.data.RepositorioRemotoEmMemoria
+import kmp.edu.leafon_kmp.core.auth.AuthRepository
 import kmp.edu.leafon_kmp.presentation.home.DashboardScreen
 import kmp.edu.leafon_kmp.presentation.home.HomeViewModel
 import kmp.edu.leafon_kmp.presentation.login.LoginAction
@@ -35,9 +40,26 @@ import kmp.edu.leafon_kmp.presentation.register.RegisterViewModel
 fun App() {
     val backStack = remember { mutableStateListOf<AppDestination>(AppDestination.Login) }
     val navigator = remember(backStack) { AppNavigator(backStack) }
-    val repositorioRemoto = remember { RepositorioRemotoEmMemoria() }
+    val authRepository = remember { AppDependencies.authRepository }
+    val repositorioRemoto = remember { AppDependencies.repositorioRemoto }
     val potListViewModel = remember(repositorioRemoto) {
         PotListViewModel(repositorio = repositorioRemoto)
+    }
+    var profileViewModel by remember { mutableStateOf<ProfileViewModel?>(null) }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            profileViewModel?.onCleared()
+            profileViewModel = null
+        }
+    }
+
+    LaunchedEffect(authRepository) {
+        restoreSessionIfPossible(
+            authRepository = authRepository,
+            navigator = navigator,
+            backStack = backStack,
+        )
     }
 
     MaterialTheme {
@@ -50,7 +72,16 @@ fun App() {
             entryProvider = { destination ->
                 when (destination) {
                     AppDestination.Login -> NavEntry(destination) {
-                        val loginViewModel = remember { LoginViewModel() }
+                        val loginViewModel = remember {
+                            LoginViewModel(
+                                authRepository = AppDependencies.authRepository,
+                                onLoginSuccess = navigator::goToHome,
+                            )
+                        }
+
+                        DisposableEffect(loginViewModel) {
+                            onDispose { loginViewModel.onCleared() }
+                        }
 
                         LoginScreen(
                             state = loginViewModel.state,
@@ -62,14 +93,23 @@ fun App() {
                             },
                             onLoginClick = {
                                 loginViewModel.onAction(LoginAction.OnLoginClick)
-                                navigator.goToHome()
                             },
                             onCreateAccountClick = navigator::goToRegister,
                         )
                     }
 
                     AppDestination.Register -> NavEntry(destination) {
-                        val registerViewModel = remember { RegisterViewModel() }
+                        val registerViewModel = remember {
+                            RegisterViewModel(
+                                authRepository = AppDependencies.authRepository,
+                                apiClient = AppDependencies.apiClient,
+                                onRegisterSuccess = navigator::goToLogin,
+                            )
+                        }
+
+                        DisposableEffect(registerViewModel) {
+                            onDispose { registerViewModel.onCleared() }
+                        }
 
                         RegisterScreen(
                             state = registerViewModel.state,
@@ -90,7 +130,6 @@ fun App() {
                             },
                             onRegisterClick = {
                                 registerViewModel.onAction(RegisterAction.OnRegisterClick)
-                                navigator.goToHome()
                             },
                             onBackToLoginClick = navigator::goBackOrLogin,
                         )
@@ -245,18 +284,42 @@ fun App() {
                     }
 
                     AppDestination.Profile -> NavEntry(destination) {
-                        val profileViewModel = remember { ProfileViewModel() }
+                        val resolvedProfileViewModel = profileViewModel ?: ProfileViewModel(
+                            authRepository = AppDependencies.authRepository,
+                            apiClient = AppDependencies.apiClient,
+                        ).also { createdViewModel ->
+                            profileViewModel = createdViewModel
+                        }
 
                         ProfileRouteScreen(
-                            viewModel = profileViewModel,
+                            viewModel = resolvedProfileViewModel,
                             onHomeClick = navigator::goToHome,
                             onPotsClick = navigator::goToPots,
                             onAlertsClick = navigator::goToAlerts,
-                            onLoggedOut = navigator::goToLogin,
+                            onLoggedOut = {
+                                profileViewModel?.onCleared()
+                                profileViewModel = null
+                                navigator.goToLogin()
+                            },
                         )
                     }
                 }
             },
         )
     }
+}
+
+private suspend fun restoreSessionIfPossible(
+    authRepository: AuthRepository,
+    navigator: AppNavigator,
+    backStack: List<AppDestination>,
+) {
+    val session = authRepository.getCurrentSession() ?: return
+    val loginIsOnTop = backStack.lastOrNull() == AppDestination.Login
+
+    if (!loginIsOnTop || session.accessToken.isBlank()) {
+        return
+    }
+
+    navigator.goToHome()
 }

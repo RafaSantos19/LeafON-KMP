@@ -1,145 +1,195 @@
 package kmp.edu.leafon_kmp.presentation.profile
 
+import kmp.edu.leafon_kmp.core.auth.AuthErrorMapper
+import kmp.edu.leafon_kmp.core.auth.AuthRepository
+import kmp.edu.leafon_kmp.data.remote.LeafOnApiClient
+import kmp.edu.leafon_kmp.data.remote.dto.UpdateUserRequestDto
+import kmp.edu.leafon_kmp.data.remote.dto.UserResponseDto
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-// ─────────────────────────────────────────────────────────────────────────────
-// ProfileViewModel.kt
-//
-// ViewModel para a tela de perfil.
-//
-// Não estende nenhuma classe específica de plataforma — usa apenas
-// kotlinx.coroutines, que é 100% Kotlin Multiplatform.
-//
-// Para integrar com o ciclo de vida no Android, envolva este ViewModel em
-// um androidx.lifecycle.ViewModel e delegue as chamadas. No Desktop/Web,
-// instancie-o diretamente e chame onCleared() ao desmontar a tela.
-//
-// Integração com backend (quando disponível):
-//   - Substitua o bloco `delay(1_500)` em [saveChanges] pela chamada real:
-//       profileRepository.updateProfile(uiState.value.toRequest())
-//   - Substitua o bloco em [logout] pela chamada:
-//       authRepository.logout()
-// ─────────────────────────────────────────────────────────────────────────────
+class ProfileViewModel(
+    private val authRepository: AuthRepository,
+    private val apiClient: LeafOnApiClient,
+) {
 
-class ProfileViewModel {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private var persistedProfile = PersistedProfile()
+    private var initialLoadStarted = false
 
-    private val job = SupervisorJob()
-    private val scope = CoroutineScope(job + Dispatchers.Default)
+    private val _state = MutableStateFlow(ProfileUiState())
+    val state: StateFlow<ProfileUiState> = _state.asStateFlow()
 
-    private val _uiState = MutableStateFlow(
-        // Estado inicial com dados mockados — substitua pela carga do repositório.
-        ProfileUiState(
-            firstName = "Lucas",
-            lastName  = "da Silva",
-            email     = "lucas@example.com",
-            phone     = "+55 11 98765-4321",
-            gender    = "Male",
-        )
-    )
-    val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
+    init {
+        loadProfile()
+    }
 
-    // ── Handlers de campos ────────────────────────────────────────────────────
+    fun onNameChange(value: String) {
+        _state.update { current ->
+            current.copy(name = value, hasUnsavedChanges = true, saveSuccess = false)
+        }
+    }
 
-    fun onFirstNameChange(value: String) =
-        _uiState.update { it.copy(firstName = value, hasUnsavedChanges = true) }
+    fun onPhoneChange(value: String) {
+        _state.update { current ->
+            current.copy(phone = value, hasUnsavedChanges = true, saveSuccess = false)
+        }
+    }
 
-    fun onLastNameChange(value: String) =
-        _uiState.update { it.copy(lastName = value, hasUnsavedChanges = true) }
-
-    fun onEmailChange(value: String) =
-        _uiState.update { it.copy(email = value, hasUnsavedChanges = true) }
-
-    fun onPhoneChange(value: String) =
-        _uiState.update { it.copy(phone = value, hasUnsavedChanges = true) }
-
-    fun onGenderChange(value: String) =
-        _uiState.update { it.copy(gender = value, hasUnsavedChanges = true) }
-
-    fun onCurrentPasswordChange(value: String) =
-        _uiState.update { it.copy(currentPassword = value, hasUnsavedChanges = true) }
-
-    fun onNewPasswordChange(value: String) =
-        _uiState.update { it.copy(newPassword = value, hasUnsavedChanges = true) }
-
-    fun onConfirmPasswordChange(value: String) =
-        _uiState.update { it.copy(confirmPassword = value, hasUnsavedChanges = true) }
-
-    // ── Ações ─────────────────────────────────────────────────────────────────
-
-    /**
-     * Salva as alterações do perfil.
-     * Simula uma chamada de API com delay — substitua pela integração real.
-     */
     fun saveChanges() {
+        val currentState = state.value
+        val request = UpdateUserRequestDto(
+            name = currentState.name.trim().ifBlank { null },
+            phone = currentState.phone.trim().ifBlank { null },
+        )
+
         scope.launch {
-            _uiState.update { it.copy(isSaving = true, errorMessage = null) }
+            _state.update { current ->
+                current.copy(isSaving = true, errorMessage = null, saveSuccess = false)
+            }
+
             try {
-                delay(1_500) // TODO: substituir por profileRepository.updateProfile(...)
-                _uiState.update {
-                    it.copy(
+                val updatedUser = apiClient.updateMe(request)
+                persistedProfile = updatedUser.toPersistedProfile(
+                    fallback = PersistedProfile(
+                        name = currentState.name.trim(),
+                        email = currentState.email.trim(),
+                        phone = currentState.phone.trim(),
+                    ),
+                )
+
+                _state.value = persistedProfile.toUiState(
+                    isSaving = false,
+                    hasUnsavedChanges = false,
+                    saveSuccess = true,
+                    errorMessage = null,
+                )
+            } catch (throwable: CancellationException) {
+                throw throwable
+            } catch (throwable: Throwable) {
+                _state.update { current ->
+                    current.copy(
                         isSaving = false,
-                        hasUnsavedChanges = false,
-                        saveSuccess = true,
-                        // Limpa campos de senha após salvar com sucesso
-                        currentPassword = "",
-                        newPassword = "",
-                        confirmPassword = "",
-                    )
-                }
-            } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(
-                        isSaving = false,
-                        errorMessage = e.message ?: "Failed to save changes.",
+                        errorMessage = AuthErrorMapper.fromThrowable(throwable),
+                        saveSuccess = false,
                     )
                 }
             }
         }
     }
 
-    /**
-     * Descarta alterações e restaura os valores originais do estado inicial.
-     * Quando integrar o backend, busque novamente o perfil do repositório.
-     */
     fun discardChanges() {
-        _uiState.update {
-            it.copy(
-                firstName = "Lucas",
-                lastName  = "da Silva",
-                email     = "lucas@example.com",
-                phone     = "+55 11 98765-4321",
-                gender    = "Male",
-                currentPassword   = "",
-                newPassword       = "",
-                confirmPassword   = "",
-                hasUnsavedChanges = false,
-                errorMessage      = null,
-            )
-        }
+        _state.value = persistedProfile.toUiState(
+            isLoading = false,
+            isSaving = false,
+            hasUnsavedChanges = false,
+            saveSuccess = false,
+            errorMessage = null,
+        )
     }
 
-    /**
-     * Realiza o logout do usuário.
-     * [onLoggedOut] é invocado após a operação para permitir que a camada de
-     * navegação redirecione para a tela de Login sem acoplamento ao ViewModel.
-     */
     fun logout(onLoggedOut: () -> Unit) {
         scope.launch {
-            // TODO: authRepository.logout()
-            onLoggedOut()
+            try {
+                authRepository.signOut()
+                onLoggedOut()
+            } catch (throwable: CancellationException) {
+                throw throwable
+            } catch (throwable: Throwable) {
+                _state.update { current ->
+                    current.copy(errorMessage = AuthErrorMapper.fromThrowable(throwable))
+                }
+            }
         }
     }
 
-    /** Limpa o CoroutineScope ao destruir o ViewModel. */
     fun onCleared() {
-        job.cancel()
+        scope.cancel()
+    }
+
+    private fun loadProfile() {
+        if (initialLoadStarted) {
+            println("ProfileViewModel.loadProfile -> skipped duplicate start")
+            return
+        }
+        initialLoadStarted = true
+
+        scope.launch {
+            println("ProfileViewModel.loadProfile -> start")
+            _state.update { current ->
+                current.copy(isLoading = true, errorMessage = null, saveSuccess = false)
+            }
+
+            try {
+                val user = apiClient.getMe()
+                println("ProfileViewModel.loadProfile -> user=$user")
+                persistedProfile = user.toPersistedProfile()
+                println("ProfileViewModel.loadProfile -> persistedProfile=$persistedProfile")
+
+                _state.value = persistedProfile.toUiState(
+                    isLoading = false,
+                    hasUnsavedChanges = false,
+                    saveSuccess = false,
+                    errorMessage = null,
+                )
+                println("ProfileViewModel.loadProfile -> finalState=${_state.value}")
+            } catch (throwable: CancellationException) {
+                println("ProfileViewModel.loadProfile -> cancelled: ${throwable.message}")
+                throw throwable
+            } catch (throwable: Throwable) {
+                println("ProfileViewModel.loadProfile -> error=$throwable")
+                println("ProfileViewModel.loadProfile -> mappedError=${AuthErrorMapper.fromThrowable(throwable)}")
+                _state.update { current ->
+                    current.copy(
+                        isLoading = false,
+                        errorMessage = AuthErrorMapper.fromThrowable(throwable),
+                        saveSuccess = false,
+                    )
+                }
+            }
+        }
+    }
+
+    private fun UserResponseDto.toPersistedProfile(
+        fallback: PersistedProfile = PersistedProfile(),
+    ): PersistedProfile {
+        return PersistedProfile(
+            name = name.orEmpty().trim().ifBlank { fallback.name },
+            email = email.orEmpty().trim().ifBlank { fallback.email },
+            phone = phone.orEmpty().trim().ifBlank { fallback.phone },
+        )
+    }
+
+    private data class PersistedProfile(
+        val name: String = "",
+        val email: String = "",
+        val phone: String = "",
+    ) {
+        fun toUiState(
+            isLoading: Boolean = false,
+            isSaving: Boolean = false,
+            hasUnsavedChanges: Boolean = false,
+            saveSuccess: Boolean = false,
+            errorMessage: String? = null,
+        ): ProfileUiState {
+            return ProfileUiState(
+                name = name,
+                email = email,
+                phone = phone,
+                isLoading = isLoading,
+                isSaving = isSaving,
+                hasUnsavedChanges = hasUnsavedChanges,
+                saveSuccess = saveSuccess,
+                errorMessage = errorMessage,
+            )
+        }
     }
 }

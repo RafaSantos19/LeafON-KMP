@@ -27,18 +27,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import kmp.edu.leafon_kmp.AppDependencies
+import kmp.edu.leafon_kmp.presentation.components.global.LeafOnColors
 import kmp.edu.leafon_kmp.presentation.components.layout.AppSidebar
 import kmp.edu.leafon_kmp.presentation.components.layout.AppTopBar
 import kmp.edu.leafon_kmp.presentation.components.layout.AppTopBarState
 import kmp.edu.leafon_kmp.presentation.components.layout.SidebarDestination
 import kmp.edu.leafon_kmp.presentation.home.components.AlertListCard
 import kmp.edu.leafon_kmp.presentation.home.components.AutomationSummaryCard
-import kmp.edu.leafon_kmp.presentation.home.components.ChartRange
 import kmp.edu.leafon_kmp.presentation.home.components.HumidityChartCard
 import kmp.edu.leafon_kmp.presentation.home.components.IrrigationListCard
 import kmp.edu.leafon_kmp.presentation.home.components.MetricCard
 import kmp.edu.leafon_kmp.presentation.home.components.PlantHeroCard
-import kmp.edu.leafon_kmp.presentation.components.global.LeafOnColors
+import kmp.edu.leafon_kmp.presentation.home.model.DashboardUiState
 import kmp.edu.leafon_kmp.presentation.profile.ProfileScreen
 import kmp.edu.leafon_kmp.presentation.profile.ProfileViewModel
 import kmp.edu.leafon_kmp.presentation.pots.PotListAction
@@ -219,7 +220,12 @@ private fun DashboardContent(
     isCompact: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val profileViewModel = remember { ProfileViewModel() }
+    val profileViewModel = remember {
+        ProfileViewModel(
+            authRepository = AppDependencies.authRepository,
+            apiClient = AppDependencies.apiClient,
+        )
+    }
     val potListViewModel = remember { PotListViewModel() }
 
     if (state.selectedDestination == SidebarDestination.PROFILE) {
@@ -255,68 +261,72 @@ private fun DashboardContent(
     }
 
     Box(modifier = modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp),
-        ) {
-            if (isCompact) {
-                PlantHeroCard(
-                    plantStatus = state.dashboard.plantStatus,
-                    onWaterNowClick = { onAction(HomeAction.OnWaterNowClick) },
-                )
-                AutomationSummaryCard(summary = state.dashboard.automationSummary)
-            } else {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(20.dp),
-                ) {
+        if (state.dashboard.hasContent()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp),
+            ) {
+                if (isCompact) {
                     PlantHeroCard(
                         plantStatus = state.dashboard.plantStatus,
                         onWaterNowClick = { onAction(HomeAction.OnWaterNowClick) },
-                        modifier = Modifier.weight(0.62f),
                     )
-                    AutomationSummaryCard(
-                        summary = state.dashboard.automationSummary,
-                        modifier = Modifier.weight(0.38f),
-                    )
+                    AutomationSummaryCard(summary = state.dashboard.automationSummary)
+                } else {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(20.dp),
+                    ) {
+                        PlantHeroCard(
+                            plantStatus = state.dashboard.plantStatus,
+                            onWaterNowClick = { onAction(HomeAction.OnWaterNowClick) },
+                            modifier = Modifier.weight(0.62f),
+                        )
+                        AutomationSummaryCard(
+                            summary = state.dashboard.automationSummary,
+                            modifier = Modifier.weight(0.38f),
+                        )
+                    }
                 }
-            }
 
-            MetricGrid(
-                state = state,
-                isCompact = isCompact,
-            )
+                MetricGrid(
+                    state = state,
+                    isCompact = isCompact,
+                )
 
-            HumidityChartCard(
-                selectedRange = state.selectedRange,
-                onRangeSelected = { range ->
-                    onAction(HomeAction.OnRangeSelected(range))
-                },
-            )
+                HumidityChartCard(
+                    selectedRange = state.selectedRange,
+                    onRangeSelected = { range ->
+                        onAction(HomeAction.OnRangeSelected(range))
+                    },
+                )
 
-            if (isCompact) {
-                IrrigationListCard(irrigations = state.dashboard.recentIrrigations)
-                AlertListCard(alerts = state.dashboard.recentAlerts)
-            } else {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(20.dp),
-                ) {
-                    IrrigationListCard(
-                        irrigations = state.dashboard.recentIrrigations,
-                        modifier = Modifier.weight(1f),
-                    )
-                    AlertListCard(
-                        alerts = state.dashboard.recentAlerts,
-                        modifier = Modifier.weight(1f),
-                    )
+                if (isCompact) {
+                    IrrigationListCard(irrigations = state.dashboard.recentIrrigations)
+                    AlertListCard(alerts = state.dashboard.recentAlerts)
+                } else {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(20.dp),
+                    ) {
+                        IrrigationListCard(
+                            irrigations = state.dashboard.recentIrrigations,
+                            modifier = Modifier.weight(1f),
+                        )
+                        AlertListCard(
+                            alerts = state.dashboard.recentAlerts,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+        } else {
+            DashboardEmptyState()
         }
 
         when {
@@ -337,11 +347,14 @@ private fun dashboardTopBarState(state: HomeState): AppTopBarState {
         SidebarDestination.PROFILE -> "Perfil"
     }
 
+    val subject = state.dashboard.plantStatus.name.ifBlank { "Nenhum Smart Pot selecionado" }
+    val lastUpdate = state.dashboard.plantStatus.lastUpdate.ifBlank { "Sem telemetria" }
+
     return AppTopBarState(
         title = title,
-        subject = state.dashboard.plantStatus.name,
+        subject = subject,
         subjectOnline = state.dashboard.plantStatus.deviceOnline,
-        lastUpdateLabel = "Última atualização: ${state.dashboard.plantStatus.lastUpdate}",
+        lastUpdateLabel = "Última atualização: $lastUpdate",
     )
 }
 
@@ -436,3 +449,38 @@ private fun DashboardErrorState(
     }
 }
 
+@Composable
+private fun DashboardEmptyState() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = "Nenhum dado carregado para a página inicial.",
+                style = MaterialTheme.typography.titleMedium,
+                color = LeafOnColors.TextPrimary,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                text = "Conecte um Smart Pot ou sincronize com o backend para ver métricas, irrigações e alertas.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = LeafOnColors.TextSecondary,
+                textAlign = TextAlign.Center,
+            )
+        }
+    }
+}
+
+private fun DashboardUiState.hasContent(): Boolean {
+    return plantStatus.name.isNotBlank() ||
+        metrics.isNotEmpty() ||
+        recentIrrigations.isNotEmpty() ||
+        recentAlerts.isNotEmpty()
+}

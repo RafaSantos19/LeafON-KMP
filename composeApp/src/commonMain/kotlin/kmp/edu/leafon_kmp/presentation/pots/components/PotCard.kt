@@ -16,10 +16,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Dns
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Spa
-import androidx.compose.material.icons.outlined.Thermostat
 import androidx.compose.material.icons.outlined.WaterDrop
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -37,13 +37,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kmp.edu.leafon_kmp.core.model.SmartPot
 import kmp.edu.leafon_kmp.presentation.components.global.LeafOnColors
-import kmp.edu.leafon_kmp.presentation.pots.model.PotStatus
-import kmp.edu.leafon_kmp.presentation.pots.model.PotUi
 
 @Composable
 fun PotCard(
-    pot: PotUi,
+    pot: SmartPot,
     onClick: () -> Unit,
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
@@ -65,7 +64,7 @@ fun PotCard(
             PotCardMetrics(pot = pot)
             Spacer(Modifier.height(14.dp))
             PotCardFooter(
-                lastUpdate = pot.lastUpdateLabel,
+                lastUpdate = pot.updatedAt ?: pot.createdAt ?: "Sem sincronizacao recente",
                 onEditClick = onEditClick,
                 onDeleteClick = onDeleteClick,
             )
@@ -74,7 +73,7 @@ fun PotCard(
 }
 
 @Composable
-private fun PotCardHeader(pot: PotUi) {
+private fun PotCardHeader(pot: SmartPot) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.fillMaxWidth(),
@@ -83,7 +82,7 @@ private fun PotCardHeader(pot: PotUi) {
         Spacer(Modifier.width(14.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = pot.name,
+                text = pot.plantName,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
                 color = LeafOnColors.TextPrimary,
@@ -92,14 +91,14 @@ private fun PotCardHeader(pot: PotUi) {
             )
             Spacer(Modifier.height(2.dp))
             Text(
-                text = pot.plantType,
+                text = pot.deviceId ?: "Sem dispositivo vinculado",
                 fontSize = 12.sp,
                 color = LeafOnColors.TextSecondary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        StatusBadge(status = pot.status)
+        DeviceStatusBadge(hasDeviceId = pot.deviceId != null)
     }
 }
 
@@ -122,12 +121,9 @@ private fun PotAvatar() {
 }
 
 @Composable
-private fun StatusBadge(status: PotStatus) {
-    val (statusColor, label) = when (status) {
-        PotStatus.ONLINE -> LeafOnColors.Success to "Online"
-        PotStatus.OFFLINE -> LeafOnColors.TextSecondary to "Offline"
-        PotStatus.ATTENTION -> LeafOnColors.Warning to "Atencao"
-    }
+private fun DeviceStatusBadge(hasDeviceId: Boolean) {
+    val statusColor = if (hasDeviceId) LeafOnColors.Success else LeafOnColors.Warning
+    val label = if (hasDeviceId) "Vinculado" else "Sem device"
 
     Row(
         modifier = Modifier
@@ -151,23 +147,23 @@ private fun StatusBadge(status: PotStatus) {
 }
 
 @Composable
-private fun PotCardMetrics(pot: PotUi) {
+private fun PotCardMetrics(pot: SmartPot) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         MetricChip(
             icon = Icons.Outlined.WaterDrop,
-            label = "Umidade",
-            value = pot.humidityPercent?.let { "$it%" } ?: "-",
+            label = "Umidade minima",
+            value = "${pot.humidityMin}%",
             tint = LeafOnColors.GreenPrimary,
             highlight = true,
             modifier = Modifier.weight(1f),
         )
         MetricChip(
-            icon = Icons.Outlined.Thermostat,
-            label = "Temperatura",
-            value = pot.temperatureCelsius?.let { "${it}C" } ?: "-",
+            icon = Icons.Outlined.Dns,
+            label = "Device ID",
+            value = pot.deviceId ?: "-",
             tint = LeafOnColors.TextSecondary,
             highlight = false,
             modifier = Modifier.weight(1f),
@@ -217,6 +213,7 @@ private fun MetricChip(
                 fontWeight = FontWeight.Bold,
                 color = if (highlight) LeafOnColors.GreenPrimary else LeafOnColors.TextPrimary,
                 maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }

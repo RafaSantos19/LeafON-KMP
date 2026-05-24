@@ -10,6 +10,7 @@ import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.isSuccess
 import kmp.edu.leafon_kmp.core.network.ApiConfig
@@ -112,30 +113,58 @@ class LeafOnApiClient(
     }
 
     suspend fun getSmartPots(): List<SmartPotResponseDto> {
-        return httpClient.get(url("/smart-pots")).body()
+        return requestJson(
+            method = "GET",
+            path = "/smart-pots",
+            execute = { httpClient.get(url("/smart-pots")) },
+            decode = { rawBody -> json.decodeFromString<List<SmartPotResponseDto>>(rawBody) },
+        )
     }
 
     suspend fun getSmartPotById(id: String): SmartPotResponseDto {
-        return httpClient.get(url("/smart-pots/$id")).body()
+        return requestJson(
+            method = "GET",
+            path = "/smart-pots/$id",
+            execute = { httpClient.get(url("/smart-pots/$id")) },
+            decode = { rawBody -> json.decodeFromString<SmartPotResponseDto>(rawBody) },
+        )
     }
 
     suspend fun createSmartPot(request: CreateSmartPotRequestDto): SmartPotResponseDto {
-        return httpClient.post(url("/smart-pots")) {
-            setBody(request)
-        }.body()
+        return requestJson(
+            method = "POST",
+            path = "/smart-pots",
+            execute = {
+                httpClient.post(url("/smart-pots")) {
+                    setBody(request)
+                }
+            },
+            decode = { rawBody -> json.decodeFromString<SmartPotResponseDto>(rawBody) },
+        )
     }
 
     suspend fun updateSmartPot(
         id: String,
         request: UpdateSmartPotRequestDto,
     ): SmartPotResponseDto {
-        return httpClient.put(url("/smart-pots/$id")) {
-            setBody(request)
-        }.body()
+        return requestJson(
+            method = "PUT",
+            path = "/smart-pots/$id",
+            execute = {
+                httpClient.put(url("/smart-pots/$id")) {
+                    setBody(request)
+                }
+            },
+            decode = { rawBody -> json.decodeFromString<SmartPotResponseDto>(rawBody) },
+        )
     }
 
     suspend fun deleteSmartPot(id: String) {
-        httpClient.delete(url("/smart-pots/$id"))
+        requestUnit(
+            method = "DELETE",
+            path = "/smart-pots/$id",
+            execute = { httpClient.delete(url("/smart-pots/$id")) },
+        )
     }
 
     suspend fun createTelemetry(request: CreateTelemetryRequestDto): TelemetryResponseDto {
@@ -166,5 +195,109 @@ class LeafOnApiClient(
 
     private fun url(path: String): String {
         return "${apiConfig.normalizedBaseUrl}$path"
+    }
+
+    private suspend fun <T> requestJson(
+        method: String,
+        path: String,
+        execute: suspend () -> HttpResponse,
+        decode: (String) -> T,
+    ): T {
+        return try {
+            val response = execute()
+            val rawBody = response.bodyAsText()
+
+            println(
+                "LeafOnApiClient.request -> method=$method endpoint=$path " +
+                    "status=${response.status.value} bodyLength=${rawBody.length}"
+            )
+
+            if (!response.status.isSuccess()) {
+                throw ApiException(
+                    statusCode = response.status.value,
+                    message = rawBody.ifBlank { "Erro ao acessar $path" },
+                )
+            }
+
+            if (rawBody.isBlank()) {
+                throw ApiException(
+                    statusCode = -1,
+                    message = "Resposta vazia ao acessar $path.",
+                )
+            }
+
+            decode(rawBody)
+        } catch (exception: CancellationException) {
+            println("LeafOnApiClient.request -> cancelled method=$method endpoint=$path")
+            throw exception
+        } catch (exception: HttpRequestTimeoutException) {
+            println("LeafOnApiClient.request -> timeout method=$method endpoint=$path")
+            throw exception
+        } catch (exception: ApiException) {
+            println(
+                "LeafOnApiClient.request -> error method=$method endpoint=$path " +
+                    "status=${exception.statusCode} bodyLength=${exception.message?.length ?: 0}"
+            )
+            throw exception
+        } catch (exception: ResponseException) {
+            println(
+                "LeafOnApiClient.request -> response exception method=$method endpoint=$path " +
+                    "status=${exception.response.status.value} message=${exception.message}"
+            )
+            throw exception
+        } catch (exception: Throwable) {
+            println(
+                "LeafOnApiClient.request -> failure method=$method endpoint=$path " +
+                    "type=${exception::class.simpleName} message=${exception.message}"
+            )
+            throw exception
+        }
+    }
+
+    private suspend fun requestUnit(
+        method: String,
+        path: String,
+        execute: suspend () -> HttpResponse,
+    ) {
+        try {
+            val response = execute()
+            val rawBody = runCatching { response.bodyAsText() }.getOrDefault("")
+
+            println(
+                "LeafOnApiClient.request -> method=$method endpoint=$path " +
+                    "status=${response.status.value} bodyLength=${rawBody.length}"
+            )
+
+            if (!response.status.isSuccess()) {
+                throw ApiException(
+                    statusCode = response.status.value,
+                    message = rawBody.ifBlank { "Erro ao acessar $path" },
+                )
+            }
+        } catch (exception: CancellationException) {
+            println("LeafOnApiClient.request -> cancelled method=$method endpoint=$path")
+            throw exception
+        } catch (exception: HttpRequestTimeoutException) {
+            println("LeafOnApiClient.request -> timeout method=$method endpoint=$path")
+            throw exception
+        } catch (exception: ApiException) {
+            println(
+                "LeafOnApiClient.request -> error method=$method endpoint=$path " +
+                    "status=${exception.statusCode} bodyLength=${exception.message?.length ?: 0}"
+            )
+            throw exception
+        } catch (exception: ResponseException) {
+            println(
+                "LeafOnApiClient.request -> response exception method=$method endpoint=$path " +
+                    "status=${exception.response.status.value} message=${exception.message}"
+            )
+            throw exception
+        } catch (exception: Throwable) {
+            println(
+                "LeafOnApiClient.request -> failure method=$method endpoint=$path " +
+                    "type=${exception::class.simpleName} message=${exception.message}"
+            )
+            throw exception
+        }
     }
 }

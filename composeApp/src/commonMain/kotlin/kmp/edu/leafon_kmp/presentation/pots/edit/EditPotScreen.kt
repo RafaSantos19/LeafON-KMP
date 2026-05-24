@@ -17,14 +17,15 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import kmp.edu.leafon_kmp.data.RepositorioRemoto
-import kmp.edu.leafon_kmp.data.RepositorioRemotoEmMemoria
+import kmp.edu.leafon_kmp.data.repository.SmartPotRepository
+import kmp.edu.leafon_kmp.data.repository.SmartPotRepositoryMemory
 import kmp.edu.leafon_kmp.presentation.components.global.LeafOnColors
 import kmp.edu.leafon_kmp.presentation.components.layout.AppSidebar
 import kmp.edu.leafon_kmp.presentation.components.layout.AppTopBar
@@ -37,19 +38,23 @@ fun EditPotScreen(
     potId: String,
     onBackClick: () -> Unit,
     onPotUpdated: () -> Unit,
-    repositorio: RepositorioRemoto = RepositorioRemotoEmMemoria(),
+    smartPotRepository: SmartPotRepository = SmartPotRepositoryMemory(),
     onHomeClick: () -> Unit = onBackClick,
     onPotsClick: () -> Unit = onBackClick,
     onAlertsClick: () -> Unit = {},
     onProfileClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    val viewModel = remember(potId, repositorio, onPotUpdated) {
+    val viewModel = remember(potId, smartPotRepository, onPotUpdated) {
         EditPotViewModel(
             potId = potId,
-            repositorio = repositorio,
+            smartPotRepository = smartPotRepository,
             onUpdated = onPotUpdated,
         )
+    }
+
+    DisposableEffect(viewModel) {
+        onDispose { viewModel.onCleared() }
     }
 
     BoxWithConstraints(
@@ -175,21 +180,21 @@ private fun EditPotContent(
     ) {
         when {
             state.isLoading -> EditPotLoadingState()
-            state.errorMessage != null && state.name.isBlank() -> EditPotErrorState(
+            state.errorMessage != null && state.plantName.isBlank() -> EditPotErrorState(
                 message = state.errorMessage,
                 onBackClick = onBackClick,
             )
             else -> PotFormContent(
-                name = state.name,
                 plantName = state.plantName,
+                humidityMin = state.humidityMin,
                 deviceId = state.deviceId,
                 isSaving = state.isSaving,
                 errorMessage = state.errorMessage,
-                onNameChange = { value ->
-                    onAction(EditPotAction.OnNameChange(value))
-                },
                 onPlantNameChange = { value ->
                     onAction(EditPotAction.OnPlantNameChange(value))
+                },
+                onHumidityMinChange = { value ->
+                    onAction(EditPotAction.OnHumidityMinChange(value))
                 },
                 onDeviceIdChange = { value ->
                     onAction(EditPotAction.OnDeviceIdChange(value))
@@ -198,8 +203,8 @@ private fun EditPotContent(
                     onAction(EditPotAction.OnSaveClick)
                 },
                 onCancelClick = onBackClick,
-                title = "Editar pot",
-                subtitle = "Atualize as informacoes do vaso selecionado.",
+                title = "Editar vaso",
+                subtitle = "Atualize os dados do SmartPot selecionado.",
                 submitLabel = "Salvar alteracoes",
             )
         }
@@ -252,7 +257,7 @@ private fun EditPotErrorState(
 }
 
 private fun editPotTopBarState() = AppTopBarState(
-    title = "Editar pot",
+    title = "Editar vaso",
     subject = "Smart Pot selecionado",
     subjectOnline = true,
     lastUpdateLabel = "Atualize as informacoes do vaso",

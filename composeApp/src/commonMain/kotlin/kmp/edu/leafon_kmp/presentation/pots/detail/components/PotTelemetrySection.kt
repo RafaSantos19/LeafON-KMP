@@ -2,7 +2,6 @@ package kmp.edu.leafon_kmp.presentation.pots.detail.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -10,8 +9,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.LightMode
-import androidx.compose.material.icons.outlined.Thermostat
+import androidx.compose.material.icons.outlined.Dns
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.WaterDrop
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -30,9 +29,8 @@ import kmp.edu.leafon_kmp.presentation.components.global.LeafOnColors
 
 @Composable
 fun PotTelemetrySection(
-    humidityPercent: Int?,
-    temperatureCelsius: Int?,
-    lightLevel: Int?,
+    humidityMin: Int?,
+    deviceId: String?,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -40,60 +38,43 @@ fun PotTelemetrySection(
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         Text(
-            text = "Metricas principais",
+            text = "Dados principais",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
             color = LeafOnColors.TextPrimary,
         )
 
-        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-            val isWide = maxWidth >= 720.dp
-            val metricItems = listOf(
-                TelemetryItem(
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            TelemetryCard(
+                item = TelemetryItem(
                     icon = Icons.Outlined.WaterDrop,
-                    label = "Umidade",
-                    value = humidityPercent?.let { "$it%" } ?: "-",
-                    helper = "Solo monitorado",
+                    label = "Umidade minima",
+                    value = humidityMin?.let { "$it%" } ?: "-",
+                    helper = "Configuracao enviada para a API",
                     tint = LeafOnColors.GreenPrimary,
                 ),
-                TelemetryItem(
-                    icon = Icons.Outlined.Thermostat,
-                    label = "Temperatura",
-                    value = temperatureCelsius?.let { "${it}C" } ?: "-",
-                    helper = "Ambiente atual",
+            )
+            TelemetryCard(
+                item = TelemetryItem(
+                    icon = Icons.Outlined.Dns,
+                    label = "Device ID",
+                    value = deviceId ?: "-",
+                    helper = "Vinculo atual do dispositivo",
                     tint = LeafOnColors.TextPrimary,
                 ),
-                TelemetryItem(
-                    icon = Icons.Outlined.LightMode,
-                    label = "Luminosidade",
-                    value = lightLevel?.let { "$it%" } ?: "-",
-                    helper = "Nivel de luz",
+            )
+            TelemetryCard(
+                item = TelemetryItem(
+                    icon = Icons.Outlined.Info,
+                    label = "Telemetria",
+                    value = "Pendente",
+                    helper = "Telemetria ainda nao integrada nesta fase",
                     tint = LeafOnColors.Warning,
                 ),
             )
-
-            if (isWide) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(14.dp),
-                ) {
-                    metricItems.forEach { item ->
-                        TelemetryCard(
-                            item = item,
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                }
-            } else {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    metricItems.forEach { item ->
-                        TelemetryCard(item = item)
-                    }
-                }
-            }
         }
     }
 }

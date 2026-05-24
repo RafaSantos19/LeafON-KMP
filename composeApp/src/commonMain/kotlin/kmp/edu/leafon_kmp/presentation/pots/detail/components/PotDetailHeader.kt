@@ -28,14 +28,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kmp.edu.leafon_kmp.presentation.components.global.LeafOnColors
-import kmp.edu.leafon_kmp.presentation.pots.model.PotStatus
 
 @Composable
 fun PotDetailHeader(
-    name: String,
     plantName: String,
-    status: PotStatus,
-    lastUpdateLabel: String,
+    deviceId: String?,
+    humidityMin: Int?,
+    updatedAt: String?,
     modifier: Modifier = Modifier,
 ) {
     Card(
@@ -60,7 +59,7 @@ fun PotDetailHeader(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     Text(
-                        text = name,
+                        text = plantName,
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         color = LeafOnColors.TextPrimary,
@@ -68,13 +67,15 @@ fun PotDetailHeader(
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f),
                     )
-                    PotStatusBadge(status = status)
+                    PotMetaBadge(
+                        label = if (deviceId.isNullOrBlank()) "Sem device" else "Vinculado",
+                    )
                 }
 
                 Spacer(Modifier.height(4.dp))
 
                 Text(
-                    text = plantName,
+                    text = deviceId ?: "Device ID nao informado",
                     fontSize = 14.sp,
                     color = LeafOnColors.TextSecondary,
                     maxLines = 1,
@@ -92,13 +93,21 @@ fun PotDetailHeader(
                     )
                     Spacer(Modifier.width(6.dp))
                     Text(
-                        text = "Ultima atualizacao: $lastUpdateLabel",
+                        text = "Ultima atualizacao: ${updatedAt ?: "Sem sincronizacao recente"}",
                         fontSize = 13.sp,
                         color = LeafOnColors.TextSecondary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
+
+                Spacer(Modifier.height(8.dp))
+
+                Text(
+                    text = "Umidade minima configurada: ${humidityMin?.let { "$it%" } ?: "-"}",
+                    fontSize = 13.sp,
+                    color = LeafOnColors.TextSecondary,
+                )
             }
         }
     }
@@ -117,6 +126,22 @@ private fun PotDetailAvatar() {
             contentDescription = null,
             tint = LeafOnColors.GreenPrimary,
             modifier = Modifier.size(34.dp),
+        )
+    }
+}
+
+@Composable
+private fun PotMetaBadge(label: String) {
+    Box(
+        modifier = Modifier
+            .background(LeafOnColors.BgSoftGreen, RoundedCornerShape(20.dp))
+            .padding(horizontal = 10.dp, vertical = 5.dp),
+    ) {
+        Text(
+            text = label,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = LeafOnColors.GreenPrimary,
         )
     }
 }

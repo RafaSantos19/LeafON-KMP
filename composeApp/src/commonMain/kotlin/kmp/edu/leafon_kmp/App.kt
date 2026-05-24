@@ -40,15 +40,17 @@ import kmp.edu.leafon_kmp.presentation.register.RegisterViewModel
 fun App() {
     val backStack = remember { mutableStateListOf<AppDestination>(AppDestination.Login) }
     val navigator = remember(backStack) { AppNavigator(backStack) }
-    val authRepository = remember { AppDependencies.authRepository }
-    val repositorioRemoto = remember { AppDependencies.repositorioRemoto }
-    val potListViewModel = remember(repositorioRemoto) {
-        PotListViewModel(repositorio = repositorioRemoto)
+    val authRepository = AppDependencies.authRepository
+    val smartPotRepository = AppDependencies.smartPotRepository
+    val repositorioRemoto = AppDependencies.repositorioRemoto
+    val potListViewModel = remember {
+        PotListViewModel(smartPotRepository = smartPotRepository)
     }
     var profileViewModel by remember { mutableStateOf<ProfileViewModel?>(null) }
 
     DisposableEffect(Unit) {
         onDispose {
+            potListViewModel.onCleared()
             profileViewModel?.onCleared()
             profileViewModel = null
         }
@@ -154,9 +156,6 @@ fun App() {
                             onAddPotClick = navigator::goToCreatePot,
                             onNavigateToPotDetail = navigator::goToPotDetail,
                             onNavigateToEditPot = navigator::goToEditPot,
-                            onDeletePot = {
-                                potListViewModel.onAction(PotListAction.OnRefresh)
-                            },
                             onHomeClick = navigator::goToHome,
                             onAlertsClick = navigator::goToAlerts,
                             onProfileClick = navigator::goToProfile,
@@ -168,9 +167,13 @@ fun App() {
 
                         PotDetailScreen(
                             potId = potId,
-                            repositorio = repositorioRemoto,
+                            smartPotRepository = smartPotRepository,
                             onBackClick = navigator::goBackOrPots,
                             onEditClick = navigator::goToEditPot,
+                            onDeleteSuccess = {
+                                potListViewModel.onAction(PotListAction.OnRefresh)
+                                navigator.goToPots()
+                            },
                             onViewRoutinesClick = navigator::goToPotRoutines,
                             onViewAlertsClick = navigator::goToPotAlerts,
                             onHomeClick = navigator::goToHome,
@@ -253,7 +256,7 @@ fun App() {
 
                         EditPotScreen(
                             potId = potId,
-                            repositorio = repositorioRemoto,
+                            smartPotRepository = smartPotRepository,
                             onBackClick = navigator::goBackOrPots,
                             onPotUpdated = {
                                 potListViewModel.onAction(PotListAction.OnRefresh)
@@ -270,7 +273,7 @@ fun App() {
 
                     AppDestination.CreatePot -> NavEntry(destination) {
                         CreatePotScreen(
-                            repositorio = repositorioRemoto,
+                            smartPotRepository = smartPotRepository,
                             onBackClick = navigator::goBackOrPots,
                             onPotCreated = {
                                 potListViewModel.onAction(PotListAction.OnRefresh)

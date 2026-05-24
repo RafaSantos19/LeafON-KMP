@@ -1,5 +1,7 @@
 package kmp.edu.leafon_kmp.presentation.pots.model
 
+import kmp.edu.leafon_kmp.core.model.SmartPot
+
 data class PotUi(
     val id: String,
     val name: String,
@@ -16,6 +18,25 @@ enum class PotStatus {
     OFFLINE,
     ATTENTION,
 }
+
+fun smartPotPreviewItems() = listOf(
+    SmartPot(
+        id = "1",
+        plantName = "Manjericao",
+        humidityMin = 40,
+        deviceId = "HC-05-TESTE",
+        createdAt = "2026-05-20T10:00:00Z",
+        updatedAt = "2026-05-22T08:30:00Z",
+    ),
+    SmartPot(
+        id = "2",
+        plantName = "Jiboia",
+        humidityMin = 35,
+        deviceId = null,
+        createdAt = "2026-05-18T09:15:00Z",
+        updatedAt = "2026-05-23T11:45:00Z",
+    ),
+)
 
 fun potPreviewItems() = listOf(
     PotUi(

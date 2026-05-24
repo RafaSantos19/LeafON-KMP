@@ -8,7 +8,14 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kmp.edu.leafon_kmp.presentation.components.global.LeafOnColors
@@ -16,14 +23,12 @@ import kmp.edu.leafon_kmp.presentation.components.layout.AppSidebar
 import kmp.edu.leafon_kmp.presentation.components.layout.AppTopBar
 import kmp.edu.leafon_kmp.presentation.components.layout.AppTopBarState
 import kmp.edu.leafon_kmp.presentation.components.layout.SidebarDestination
-import kmp.edu.leafon_kmp.presentation.pots.model.PotStatus
 
 @Composable
 fun PotListScreen(
     viewModel: PotListViewModel,
     onNavigateToPotDetail: (String) -> Unit = {},
     onNavigateToEditPot: (String) -> Unit = {},
-    onDeletePot: (String) -> Unit = {},
     onAddPotClick: () -> Unit = {},
     onHomeClick: () -> Unit = {},
     onAlertsClick: () -> Unit = {},
@@ -31,6 +36,8 @@ fun PotListScreen(
     onNotificationsClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
+    var pendingDeletePotId by remember { mutableStateOf<String?>(null) }
+
     BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
@@ -50,8 +57,7 @@ fun PotListScreen(
                     onNavigateToEditPot(id)
                 },
                 onDeletePotClick = { id ->
-                    viewModel.onAction(PotListAction.OnDeletePotClick(id))
-                    onDeletePot(id)
+                    pendingDeletePotId = id
                 },
                 onAddPotClick = {
                     viewModel.onAction(PotListAction.OnAddPotClick)
@@ -77,8 +83,7 @@ fun PotListScreen(
                     onNavigateToEditPot(id)
                 },
                 onDeletePotClick = { id ->
-                    viewModel.onAction(PotListAction.OnDeletePotClick(id))
-                    onDeletePot(id)
+                    pendingDeletePotId = id
                 },
                 onAddPotClick = {
                     viewModel.onAction(PotListAction.OnAddPotClick)
@@ -91,6 +96,41 @@ fun PotListScreen(
                 onAlertsClick = onAlertsClick,
                 onProfileClick = onProfileClick,
                 onNotificationsClick = onNotificationsClick,
+            )
+        }
+
+        val potToDelete = viewModel.state.pots.firstOrNull { it.id == pendingDeletePotId }
+
+        if (potToDelete != null) {
+            AlertDialog(
+                onDismissRequest = {
+                    pendingDeletePotId = null
+                },
+                title = {
+                    Text("Excluir vaso")
+                },
+                text = {
+                    Text("Deseja excluir ${potToDelete.plantName}? Esta acao nao pode ser desfeita.")
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            viewModel.onAction(PotListAction.OnDeletePotClick(potToDelete.id))
+                            pendingDeletePotId = null
+                        },
+                    ) {
+                        Text("Excluir")
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = {
+                            pendingDeletePotId = null
+                        },
+                    ) {
+                        Text("Cancelar")
+                    }
+                },
             )
         }
     }
@@ -189,13 +229,14 @@ private fun CompactPotListLayout(
 
 private fun potListTopBarState(state: PotListState): AppTopBarState {
     val totalPots = state.pots.size
-    val onlinePots = state.pots.count { it.status == PotStatus.ONLINE }
-    val lastUpdate = state.pots.firstOrNull()?.lastUpdateLabel ?: "sem atualizacao"
+    val lastUpdate = state.pots.firstOrNull()?.updatedAt
+        ?: state.pots.firstOrNull()?.createdAt
+        ?: "sem atualizacao"
 
     return AppTopBarState(
         title = "Planta & Vaso",
-        subject = "$onlinePots/$totalPots vasos online",
-        subjectOnline = onlinePots > 0,
+        subject = "$totalPots vasos cadastrados",
+        subjectOnline = totalPots > 0,
         lastUpdateLabel = "Ultima atualizacao: $lastUpdate",
     )
 }

@@ -10,12 +10,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import kmp.edu.leafon_kmp.data.RepositorioRemoto
-import kmp.edu.leafon_kmp.data.RepositorioRemotoEmMemoria
+import kmp.edu.leafon_kmp.data.repository.SmartPotRepository
+import kmp.edu.leafon_kmp.data.repository.SmartPotRepositoryMemory
 import kmp.edu.leafon_kmp.presentation.components.global.LeafOnColors
 import kmp.edu.leafon_kmp.presentation.components.layout.AppSidebar
 import kmp.edu.leafon_kmp.presentation.components.layout.AppTopBar
@@ -27,18 +28,22 @@ import kmp.edu.leafon_kmp.presentation.pots.components.PotFormContent
 fun CreatePotScreen(
     onBackClick: () -> Unit,
     onPotCreated: () -> Unit,
-    repositorio: RepositorioRemoto = RepositorioRemotoEmMemoria(),
+    smartPotRepository: SmartPotRepository = SmartPotRepositoryMemory(),
     onHomeClick: () -> Unit = onBackClick,
     onPotsClick: () -> Unit = onBackClick,
     onAlertsClick: () -> Unit = {},
     onProfileClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    val viewModel = remember(repositorio, onPotCreated) {
+    val viewModel = remember(smartPotRepository, onPotCreated) {
         CreatePotViewModel(
-            repositorio = repositorio,
+            smartPotRepository = smartPotRepository,
             onCreated = onPotCreated,
         )
+    }
+
+    DisposableEffect(viewModel) {
+        onDispose { viewModel.onCleared() }
     }
 
     BoxWithConstraints(
@@ -163,16 +168,16 @@ private fun CreatePotContent(
         contentAlignment = Alignment.TopCenter,
     ) {
         PotFormContent(
-            name = state.name,
             plantName = state.plantName,
+            humidityMin = state.humidityMin,
             deviceId = state.deviceId,
             isSaving = state.isSaving,
             errorMessage = state.errorMessage,
-            onNameChange = { value ->
-                onAction(CreatePotAction.OnNameChange(value))
-            },
             onPlantNameChange = { value ->
                 onAction(CreatePotAction.OnPlantNameChange(value))
+            },
+            onHumidityMinChange = { value ->
+                onAction(CreatePotAction.OnHumidityMinChange(value))
             },
             onDeviceIdChange = { value ->
                 onAction(CreatePotAction.OnDeviceIdChange(value))
@@ -186,7 +191,7 @@ private fun CreatePotContent(
 }
 
 private fun createPotTopBarState() = AppTopBarState(
-    title = "Cadastrar pot",
+    title = "Cadastrar vaso",
     subject = "Novo Smart Pot",
     subjectOnline = false,
     lastUpdateLabel = "Preencha os dados iniciais",

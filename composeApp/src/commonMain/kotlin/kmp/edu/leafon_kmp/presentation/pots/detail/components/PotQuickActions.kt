@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Repeat
@@ -25,8 +26,10 @@ import kmp.edu.leafon_kmp.presentation.components.global.LeafOnColors
 @Composable
 fun PotQuickActions(
     onEditClick: () -> Unit,
+    onDeleteClick: () -> Unit,
     onViewRoutinesClick: () -> Unit,
     onViewAlertsClick: () -> Unit,
+    isDeleting: Boolean,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -47,14 +50,22 @@ fun PotQuickActions(
                 ) {
                     EditActionButton(
                         onClick = onEditClick,
+                        enabled = !isDeleting,
+                        modifier = Modifier.weight(1f),
+                    )
+                    DeleteActionButton(
+                        onClick = onDeleteClick,
+                        enabled = !isDeleting,
                         modifier = Modifier.weight(1f),
                     )
                     RoutinesActionButton(
                         onClick = onViewRoutinesClick,
+                        enabled = !isDeleting,
                         modifier = Modifier.weight(1f),
                     )
                     AlertsActionButton(
                         onClick = onViewAlertsClick,
+                        enabled = !isDeleting,
                         modifier = Modifier.weight(1f),
                     )
                 }
@@ -63,9 +74,10 @@ fun PotQuickActions(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    EditActionButton(onClick = onEditClick)
-                    RoutinesActionButton(onClick = onViewRoutinesClick)
-                    AlertsActionButton(onClick = onViewAlertsClick)
+                    EditActionButton(onClick = onEditClick, enabled = !isDeleting)
+                    DeleteActionButton(onClick = onDeleteClick, enabled = !isDeleting)
+                    RoutinesActionButton(onClick = onViewRoutinesClick, enabled = !isDeleting)
+                    AlertsActionButton(onClick = onViewAlertsClick, enabled = !isDeleting)
                 }
             }
         }
@@ -75,10 +87,12 @@ fun PotQuickActions(
 @Composable
 private fun EditActionButton(
     onClick: () -> Unit,
+    enabled: Boolean,
     modifier: Modifier = Modifier,
 ) {
     Button(
         onClick = onClick,
+        enabled = enabled,
         modifier = modifier
             .fillMaxWidth()
             .heightIn(min = 46.dp),
@@ -97,12 +111,40 @@ private fun EditActionButton(
 }
 
 @Composable
+private fun DeleteActionButton(
+    onClick: () -> Unit,
+    enabled: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    Button(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = 46.dp),
+        shape = RoundedCornerShape(8.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = LeafOnColors.Error,
+            contentColor = LeafOnColors.TextOnDark,
+        ),
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.Delete,
+            contentDescription = null,
+        )
+        Text(if (enabled) "Excluir vaso" else "Excluindo...")
+    }
+}
+
+@Composable
 private fun RoutinesActionButton(
     onClick: () -> Unit,
+    enabled: Boolean,
     modifier: Modifier = Modifier,
 ) {
     OutlinedButton(
         onClick = onClick,
+        enabled = enabled,
         modifier = modifier
             .fillMaxWidth()
             .heightIn(min = 46.dp),
@@ -122,10 +164,12 @@ private fun RoutinesActionButton(
 @Composable
 private fun AlertsActionButton(
     onClick: () -> Unit,
+    enabled: Boolean,
     modifier: Modifier = Modifier,
 ) {
     OutlinedButton(
         onClick = onClick,
+        enabled = enabled,
         modifier = modifier
             .fillMaxWidth()
             .heightIn(min = 46.dp),

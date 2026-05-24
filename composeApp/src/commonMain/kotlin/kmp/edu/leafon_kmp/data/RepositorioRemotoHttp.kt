@@ -1,11 +1,7 @@
 package kmp.edu.leafon_kmp.data
 
-import kmp.edu.leafon_kmp.core.model.TelemetryReading
-import kmp.edu.leafon_kmp.data.remote.LeafOnApiClient
-import kmp.edu.leafon_kmp.data.remote.dto.CreateSmartPotRequestDto
-import kmp.edu.leafon_kmp.data.remote.dto.SmartPotResponseDto
-import kmp.edu.leafon_kmp.data.remote.dto.TelemetryResponseDto
-import kmp.edu.leafon_kmp.data.remote.dto.UpdateSmartPotRequestDto
+import kmp.edu.leafon_kmp.core.model.SmartPot
+import kmp.edu.leafon_kmp.data.repository.SmartPotRepository
 import kmp.edu.leafon_kmp.presentation.pots.model.PotStatus
 import kmp.edu.leafon_kmp.presentation.pots.model.PotUi
 import kmp.edu.leafon_kmp.presentation.pots.routines.model.RoutineUi
@@ -13,10 +9,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import kotlin.math.roundToInt
 
 class RepositorioRemotoHttp(
-    private val apiClient: LeafOnApiClient,
+    private val smartPotRepository: SmartPotRepository,
     private val fallback: RepositorioRemoto = RepositorioRemotoEmMemoria(),
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
 ) : RepositorioRemoto {
@@ -43,12 +38,13 @@ class RepositorioRemotoHttp(
 
         scope.launch {
             runCatching {
-                apiClient.createSmartPot(pot.toCreateRequest())
-            }.onSuccess { created ->
-                replacePot(
-                    remotePot = created,
-                    latestTelemetry = apiClient.safeLatestTelemetry(created.id),
+                smartPotRepository.createSmartPot(
+                    plantName = pot.plantType.ifBlank { pot.name },
+                    humidityMin = pot.humidityPercent ?: DEFAULT_HUMIDITY_MIN,
+                    deviceId = pot.deviceId.takeIf { it.isNotBlank() },
                 )
+            }.onSuccess { created ->
+                replacePot(created)
             }
         }
     }
@@ -64,12 +60,14 @@ class RepositorioRemotoHttp(
 
         scope.launch {
             runCatching {
-                apiClient.updateSmartPot(pot.id, pot.toUpdateRequest())
-            }.onSuccess { updated ->
-                replacePot(
-                    remotePot = updated,
-                    latestTelemetry = apiClient.safeLatestTelemetry(updated.id),
+                smartPotRepository.updateSmartPot(
+                    id = pot.id,
+                    plantName = pot.plantType.ifBlank { pot.name },
+                    humidityMin = pot.humidityPercent ?: DEFAULT_HUMIDITY_MIN,
+                    deviceId = pot.deviceId.takeIf { it.isNotBlank() },
                 )
+            }.onSuccess { updated ->
+                replacePot(updated)
             }
         }
     }
@@ -79,7 +77,7 @@ class RepositorioRemotoHttp(
         rotinaCache.remove(id)
 
         scope.launch {
-            runCatching { apiClient.deleteSmartPot(id) }
+            runCatching { smartPotRepository.deleteSmartPot(id) }
         }
     }
 
@@ -109,10 +107,7 @@ class RepositorioRemotoHttp(
     }
 
     suspend fun syncPotsFromBackend(): List<PotUi> {
-        val pots = apiClient.getSmartPots().map { remotePot ->
-            val latestTelemetry = apiClient.safeLatestTelemetry(remotePot.id)?.toDomain()
-            remotePot.toDomain(latestTelemetry)
-        }
+        val pots = smartPotRepository.listSmartPots().map { it.toLegacyPotUi() }
 
         potCache.clear()
         potCache.addAll(pots)
@@ -128,20 +123,13 @@ class RepositorioRemotoHttp(
     private fun refreshPotAsync(id: String) {
         scope.launch {
             runCatching {
-                val remotePot = apiClient.getSmartPotById(id)
-                replacePot(
-                    remotePot = remotePot,
-                    latestTelemetry = apiClient.safeLatestTelemetry(remotePot.id),
-                )
+                replacePot(smartPotRepository.getSmartPotById(id))
             }
         }
     }
 
-    private suspend fun replacePot(
-        remotePot: SmartPotResponseDto,
-        latestTelemetry: TelemetryResponseDto?,
-    ) {
-        val mappedPot = remotePot.toDomain(latestTelemetry?.toDomain())
+    private fun replacePot(remotePot: SmartPot) {
+        val mappedPot = remotePot.toLegacyPotUi()
         val index = potCache.indexOfFirst { it.id == mappedPot.id }
 
         if (index >= 0) {
@@ -152,68 +140,17 @@ class RepositorioRemotoHttp(
     }
 }
 
-private suspend fun LeafOnApiClient.safeLatestTelemetry(
-    smartPotId: String?,
-): TelemetryResponseDto? {
-    val resolvedId = smartPotId?.takeIf { it.isNotBlank() } ?: return null
-    return runCatching { getLatestTelemetry(resolvedId) }.getOrNull()
-}
-
-private fun SmartPotResponseDto.toDomain(
-    latestTelemetry: TelemetryReading?,
-): PotUi {
-    val resolvedId = id.orEmpty().ifBlank { deviceId.orEmpty() }
-    val plantLabel = plantName.ifBlank { "Smart Pot" }
-
+private fun SmartPot.toLegacyPotUi(): PotUi {
     return PotUi(
-        id = resolvedId,
-        name = plantLabel,
-        plantType = plantLabel,
-        status = latestTelemetry.toPotStatus(humidityMin),
-        humidityPercent = latestTelemetry?.soilHumidity,
-        temperatureCelsius = latestTelemetry?.temperature?.roundToInt(),
-        lastUpdateLabel = latestTelemetry?.readAt?.ifBlank { "Sem telemetria recente" }
-            ?: "Sem telemetria recente",
+        id = id,
+        name = plantName,
+        plantType = plantName,
+        status = PotStatus.OFFLINE,
+        humidityPercent = humidityMin,
+        temperatureCelsius = null,
+        lastUpdateLabel = updatedAt ?: createdAt ?: "Sem telemetria integrada",
         deviceId = deviceId.orEmpty(),
     )
-}
-
-private fun PotUi.toCreateRequest(): CreateSmartPotRequestDto {
-    return CreateSmartPotRequestDto(
-        plantName = plantType.ifBlank { name },
-        humidityMin = humidityPercent ?: DEFAULT_HUMIDITY_MIN,
-        deviceId = deviceId.takeIf { it.isNotBlank() },
-    )
-}
-
-private fun PotUi.toUpdateRequest(): UpdateSmartPotRequestDto {
-    return UpdateSmartPotRequestDto(
-        plantName = plantType.ifBlank { name },
-        humidityMin = humidityPercent ?: DEFAULT_HUMIDITY_MIN,
-        deviceId = deviceId.takeIf { it.isNotBlank() },
-    )
-}
-
-private fun TelemetryResponseDto.toDomain(): TelemetryReading {
-    return TelemetryReading(
-        id = id.orEmpty(),
-        smartPotId = smartPotId.orEmpty(),
-        soilHumidity = soilHumidity,
-        temperature = temperature,
-        luminosity = luminosity,
-        readAt = readAt,
-        createdAt = createdAt,
-    )
-}
-
-private fun TelemetryReading?.toPotStatus(humidityMin: Int): PotStatus {
-    val reading = this ?: return PotStatus.OFFLINE
-
-    return if (reading.soilHumidity < humidityMin) {
-        PotStatus.ATTENTION
-    } else {
-        PotStatus.ONLINE
-    }
 }
 
 private const val DEFAULT_HUMIDITY_MIN = 30

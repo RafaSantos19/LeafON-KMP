@@ -9,11 +9,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import kmp.edu.leafon_kmp.presentation.pots.model.PotUi
+import kmp.edu.leafon_kmp.core.model.SmartPot
 
 @Composable
 fun PotGrid(
-    pots: List<PotUi>,
+    pots: List<SmartPot>,
     columns: Int,
     onPotClick: (String) -> Unit,
     onEditPotClick: (String) -> Unit,
@@ -75,6 +75,6 @@ private fun PotGridRow(
 }
 
 private sealed interface PotGridItem {
-    data class ExistingPot(val pot: PotUi) : PotGridItem
+    data class ExistingPot(val pot: SmartPot) : PotGridItem
     data object AddNew : PotGridItem
 }

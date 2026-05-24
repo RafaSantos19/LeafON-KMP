@@ -64,6 +64,9 @@ fun PotListContent(
                     message = state.errorMessage,
                     onRefreshClick = onRefreshClick,
                 )
+                state.pots.isEmpty() -> PotListEmptyState(
+                    onAddPotClick = onAddPotClick,
+                )
                 else -> PotGrid(
                     pots = state.pots,
                     columns = columns,
@@ -87,7 +90,7 @@ private fun PotListHeader() {
             color = LeafOnColors.TextPrimary,
         )
         Text(
-            text = "Gerencie seus vasos inteligentes e acompanhe o status de cada um.",
+            text = "Gerencie seus SmartPots reais e acompanhe os dados basicos de cada vaso.",
             fontSize = 14.sp,
             color = LeafOnColors.TextSecondary,
         )
@@ -103,6 +106,42 @@ private fun PotListLoadingState() {
         contentAlignment = Alignment.Center,
     ) {
         CircularProgressIndicator(color = LeafOnColors.GreenPrimary)
+    }
+}
+
+@Composable
+private fun PotListEmptyState(
+    onAddPotClick: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 48.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(
+            text = "Nenhum vaso cadastrado ainda.",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = LeafOnColors.TextPrimary,
+            textAlign = TextAlign.Center,
+        )
+        Text(
+            text = "Crie o primeiro SmartPot para comecar a sincronizacao com a API.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = LeafOnColors.TextSecondary,
+            textAlign = TextAlign.Center,
+        )
+        Button(
+            onClick = onAddPotClick,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = LeafOnColors.GreenPrimary,
+                contentColor = LeafOnColors.TextOnDark,
+            ),
+        ) {
+            Text("Cadastrar vaso")
+        }
     }
 }
 

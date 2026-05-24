@@ -12,6 +12,9 @@ import kmp.edu.leafon_kmp.data.RepositorioRemotoEmMemoria
 import kmp.edu.leafon_kmp.data.RepositorioRemotoHttp
 import kmp.edu.leafon_kmp.data.auth.SupabaseAuthRepository
 import kmp.edu.leafon_kmp.data.remote.LeafOnApiClient
+import kmp.edu.leafon_kmp.data.repository.SmartPotRepository
+import kmp.edu.leafon_kmp.data.repository.SmartPotRepositoryHttp
+import kmp.edu.leafon_kmp.data.repository.SmartPotRepositoryMemory
 
 object AppDependencies {
     val apiConfig = ApiConfig()
@@ -42,15 +45,24 @@ object AppDependencies {
             apiConfig = apiConfig,
         )
     }
+    val smartPotRepositoryMemory: SmartPotRepository by lazy { SmartPotRepositoryMemory() }
+    val smartPotRepositoryHttp: SmartPotRepository by lazy {
+        SmartPotRepositoryHttp(
+            apiClient = apiClient,
+        )
+    }
     val remotoEmMemoria: RepositorioRemoto by lazy { RepositorioRemotoEmMemoria() }
     val remotoHttp: RepositorioRemoto by lazy {
         RepositorioRemotoHttp(
-            apiClient = apiClient,
+            smartPotRepository = smartPotRepositoryHttp,
             fallback = remotoEmMemoria,
         )
     }
 
-    var usarRepositorioHttp: Boolean = false
+    var usarRepositorioHttp: Boolean = true
+
+    val smartPotRepository: SmartPotRepository
+        get() = if (usarRepositorioHttp) smartPotRepositoryHttp else smartPotRepositoryMemory
 
     val repositorioRemoto: RepositorioRemoto
         get() = if (usarRepositorioHttp) remotoHttp else remotoEmMemoria

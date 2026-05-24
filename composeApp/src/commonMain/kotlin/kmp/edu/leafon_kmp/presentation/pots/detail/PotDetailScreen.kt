@@ -13,21 +13,27 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kmp.edu.leafon_kmp.data.RepositorioRemoto
-import kmp.edu.leafon_kmp.data.RepositorioRemotoEmMemoria
+import kmp.edu.leafon_kmp.data.repository.SmartPotRepository
+import kmp.edu.leafon_kmp.data.repository.SmartPotRepositoryMemory
 import kmp.edu.leafon_kmp.presentation.components.global.LeafOnColors
 import kmp.edu.leafon_kmp.presentation.components.layout.AppSidebar
 import kmp.edu.leafon_kmp.presentation.components.layout.AppTopBar
@@ -36,14 +42,14 @@ import kmp.edu.leafon_kmp.presentation.components.layout.SidebarDestination
 import kmp.edu.leafon_kmp.presentation.pots.detail.components.PotDetailHeader
 import kmp.edu.leafon_kmp.presentation.pots.detail.components.PotQuickActions
 import kmp.edu.leafon_kmp.presentation.pots.detail.components.PotTelemetrySection
-import kmp.edu.leafon_kmp.presentation.pots.model.PotStatus
 
 @Composable
 fun PotDetailScreen(
     potId: String,
-    repositorio: RepositorioRemoto = RepositorioRemotoEmMemoria(),
+    smartPotRepository: SmartPotRepository = SmartPotRepositoryMemory(),
     onBackClick: () -> Unit,
     onEditClick: (String) -> Unit,
+    onDeleteSuccess: () -> Unit,
     onViewRoutinesClick: (String) -> Unit,
     onViewAlertsClick: (String) -> Unit,
     onHomeClick: () -> Unit = {},
@@ -53,11 +59,16 @@ fun PotDetailScreen(
     onNotificationsClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    val viewModel = remember(potId, repositorio) {
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    val viewModel = remember(potId, smartPotRepository) {
         PotDetailViewModel(
             potId = potId,
-            repositorio = repositorio,
+            smartPotRepository = smartPotRepository,
         )
+    }
+
+    DisposableEffect(viewModel) {
+        onDispose { viewModel.onCleared() }
     }
 
     BoxWithConstraints(
@@ -68,127 +79,108 @@ fun PotDetailScreen(
         val isCompact = maxWidth < 960.dp
 
         if (isCompact) {
-            CompactPotDetailLayout(
-                state = viewModel.state,
-                onAction = viewModel::onAction,
-                onBackClick = onBackClick,
-                onEditClick = onEditClick,
-                onViewRoutinesClick = onViewRoutinesClick,
-                onViewAlertsClick = onViewAlertsClick,
-                onHomeClick = onHomeClick,
-                onPotsClick = onPotsClick,
-                onAlertsClick = onAlertsClick,
-                onProfileClick = onProfileClick,
-                onNotificationsClick = onNotificationsClick,
-            )
+            Column(modifier = Modifier.fillMaxSize()) {
+                AppTopBar(
+                    state = potDetailTopBarState(viewModel.state),
+                    onNotificationsClick = onNotificationsClick,
+                    onProfileClick = onProfileClick,
+                    compact = true,
+                )
+
+                AppSidebar(
+                    selectedDestination = SidebarDestination.PLANT_AND_POT,
+                    onHomeClick = onHomeClick,
+                    onPlantAndPotClick = onPotsClick,
+                    onAlertsClick = onAlertsClick,
+                    onProfileClick = onProfileClick,
+                    compact = true,
+                )
+
+                PotDetailContent(
+                    state = viewModel.state,
+                    onAction = viewModel::onAction,
+                    onBackClick = onBackClick,
+                    onEditClick = onEditClick,
+                    onDeleteClick = {
+                        showDeleteDialog = true
+                    },
+                    onViewRoutinesClick = onViewRoutinesClick,
+                    onViewAlertsClick = onViewAlertsClick,
+                    modifier = Modifier.weight(1f),
+                )
+            }
         } else {
-            ExpandedPotDetailLayout(
-                state = viewModel.state,
-                onAction = viewModel::onAction,
-                onBackClick = onBackClick,
-                onEditClick = onEditClick,
-                onViewRoutinesClick = onViewRoutinesClick,
-                onViewAlertsClick = onViewAlertsClick,
-                onHomeClick = onHomeClick,
-                onPotsClick = onPotsClick,
-                onAlertsClick = onAlertsClick,
-                onProfileClick = onProfileClick,
-                onNotificationsClick = onNotificationsClick,
+            Row(modifier = Modifier.fillMaxSize()) {
+                AppSidebar(
+                    selectedDestination = SidebarDestination.PLANT_AND_POT,
+                    onHomeClick = onHomeClick,
+                    onPlantAndPotClick = onPotsClick,
+                    onAlertsClick = onAlertsClick,
+                    onProfileClick = onProfileClick,
+                )
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .width(1.dp)
+                        .background(LeafOnColors.BorderDefault),
+                )
+
+                Column(modifier = Modifier.fillMaxSize()) {
+                    AppTopBar(
+                        state = potDetailTopBarState(viewModel.state),
+                        onNotificationsClick = onNotificationsClick,
+                        onProfileClick = onProfileClick,
+                    )
+
+                    PotDetailContent(
+                        state = viewModel.state,
+                        onAction = viewModel::onAction,
+                        onBackClick = onBackClick,
+                        onEditClick = onEditClick,
+                        onDeleteClick = {
+                            showDeleteDialog = true
+                        },
+                        onViewRoutinesClick = onViewRoutinesClick,
+                        onViewAlertsClick = onViewAlertsClick,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+        }
+
+        if (showDeleteDialog) {
+            AlertDialog(
+                onDismissRequest = {
+                    showDeleteDialog = false
+                },
+                title = {
+                    Text("Excluir vaso")
+                },
+                text = {
+                    Text("Deseja excluir ${viewModel.state.plantName}? Esta acao nao pode ser desfeita.")
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showDeleteDialog = false
+                            viewModel.deletePot(onDeleteSuccess)
+                        },
+                    ) {
+                        Text("Excluir")
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = {
+                            showDeleteDialog = false
+                        },
+                    ) {
+                        Text("Cancelar")
+                    }
+                },
             )
         }
-    }
-}
-
-@Composable
-private fun ExpandedPotDetailLayout(
-    state: PotDetailState,
-    onAction: (PotDetailAction) -> Unit,
-    onBackClick: () -> Unit,
-    onEditClick: (String) -> Unit,
-    onViewRoutinesClick: (String) -> Unit,
-    onViewAlertsClick: (String) -> Unit,
-    onHomeClick: () -> Unit,
-    onPotsClick: () -> Unit,
-    onAlertsClick: () -> Unit,
-    onProfileClick: () -> Unit,
-    onNotificationsClick: () -> Unit,
-) {
-    Row(modifier = Modifier.fillMaxSize()) {
-        AppSidebar(
-            selectedDestination = SidebarDestination.PLANT_AND_POT,
-            onHomeClick = onHomeClick,
-            onPlantAndPotClick = onPotsClick,
-            onAlertsClick = onAlertsClick,
-            onProfileClick = onProfileClick,
-        )
-
-        Box(
-            modifier = Modifier
-                .fillMaxHeight()
-                .width(1.dp)
-                .background(LeafOnColors.BorderDefault),
-        )
-
-        Column(modifier = Modifier.fillMaxSize()) {
-            AppTopBar(
-                state = potDetailTopBarState(state),
-                onNotificationsClick = onNotificationsClick,
-                onProfileClick = onProfileClick,
-            )
-
-            PotDetailContent(
-                state = state,
-                onAction = onAction,
-                onBackClick = onBackClick,
-                onEditClick = onEditClick,
-                onViewRoutinesClick = onViewRoutinesClick,
-                onViewAlertsClick = onViewAlertsClick,
-                modifier = Modifier.weight(1f),
-            )
-        }
-    }
-}
-
-@Composable
-private fun CompactPotDetailLayout(
-    state: PotDetailState,
-    onAction: (PotDetailAction) -> Unit,
-    onBackClick: () -> Unit,
-    onEditClick: (String) -> Unit,
-    onViewRoutinesClick: (String) -> Unit,
-    onViewAlertsClick: (String) -> Unit,
-    onHomeClick: () -> Unit,
-    onPotsClick: () -> Unit,
-    onAlertsClick: () -> Unit,
-    onProfileClick: () -> Unit,
-    onNotificationsClick: () -> Unit,
-) {
-    Column(modifier = Modifier.fillMaxSize()) {
-        AppTopBar(
-            state = potDetailTopBarState(state),
-            onNotificationsClick = onNotificationsClick,
-            onProfileClick = onProfileClick,
-            compact = true,
-        )
-
-        AppSidebar(
-            selectedDestination = SidebarDestination.PLANT_AND_POT,
-            onHomeClick = onHomeClick,
-            onPlantAndPotClick = onPotsClick,
-            onAlertsClick = onAlertsClick,
-            onProfileClick = onProfileClick,
-            compact = true,
-        )
-
-        PotDetailContent(
-            state = state,
-            onAction = onAction,
-            onBackClick = onBackClick,
-            onEditClick = onEditClick,
-            onViewRoutinesClick = onViewRoutinesClick,
-            onViewAlertsClick = onViewAlertsClick,
-            modifier = Modifier.weight(1f),
-        )
     }
 }
 
@@ -198,6 +190,7 @@ private fun PotDetailContent(
     onAction: (PotDetailAction) -> Unit,
     onBackClick: () -> Unit,
     onEditClick: (String) -> Unit,
+    onDeleteClick: () -> Unit,
     onViewRoutinesClick: (String) -> Unit,
     onViewAlertsClick: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -220,6 +213,7 @@ private fun PotDetailContent(
                 state = state,
                 onAction = onAction,
                 onEditClick = onEditClick,
+                onDeleteClick = onDeleteClick,
                 onViewRoutinesClick = onViewRoutinesClick,
                 onViewAlertsClick = onViewAlertsClick,
             )
@@ -232,6 +226,7 @@ private fun PotDetailLoadedContent(
     state: PotDetailState,
     onAction: (PotDetailAction) -> Unit,
     onEditClick: (String) -> Unit,
+    onDeleteClick: () -> Unit,
     onViewRoutinesClick: (String) -> Unit,
     onViewAlertsClick: (String) -> Unit,
 ) {
@@ -244,16 +239,15 @@ private fun PotDetailLoadedContent(
         PotDetailIntro()
 
         PotDetailHeader(
-            name = state.name,
             plantName = state.plantName,
-            status = state.status,
-            lastUpdateLabel = state.lastUpdateLabel,
+            deviceId = state.deviceId,
+            humidityMin = state.humidityMin,
+            updatedAt = state.updatedAt,
         )
 
         PotTelemetrySection(
-            humidityPercent = state.humidityPercent,
-            temperatureCelsius = state.temperatureCelsius,
-            lightLevel = state.lightLevel,
+            humidityMin = state.humidityMin,
+            deviceId = state.deviceId,
         )
 
         PotQuickActions(
@@ -261,6 +255,7 @@ private fun PotDetailLoadedContent(
                 onAction(PotDetailAction.OnEditClick)
                 onEditClick(state.potId)
             },
+            onDeleteClick = onDeleteClick,
             onViewRoutinesClick = {
                 onAction(PotDetailAction.OnViewRoutinesClick)
                 onViewRoutinesClick(state.potId)
@@ -269,6 +264,7 @@ private fun PotDetailLoadedContent(
                 onAction(PotDetailAction.OnViewAlertsClick)
                 onViewAlertsClick(state.potId)
             },
+            isDeleting = state.isDeleting,
         )
     }
 }
@@ -283,7 +279,7 @@ private fun PotDetailIntro() {
             color = LeafOnColors.TextPrimary,
         )
         Text(
-            text = "Acompanhe o estado atual do vaso e acesse as principais acoes.",
+            text = "Veja os dados reais do SmartPot e acesse as principais acoes.",
             fontSize = 14.sp,
             color = LeafOnColors.TextSecondary,
         )
@@ -348,13 +344,13 @@ private fun PotDetailErrorState(
 }
 
 private fun potDetailTopBarState(state: PotDetailState): AppTopBarState {
-    val subject = state.name.ifBlank { "Smart Pot" }
-    val lastUpdate = state.lastUpdateLabel.ifBlank { "carregando" }
+    val subject = state.plantName.ifBlank { "Smart Pot" }
+    val lastUpdate = state.updatedAt ?: state.createdAt ?: "carregando"
 
     return AppTopBarState(
         title = "Detalhe do pot",
         subject = subject,
-        subjectOnline = state.status == PotStatus.ONLINE,
+        subjectOnline = state.deviceId != null,
         lastUpdateLabel = "Ultima atualizacao: $lastUpdate",
     )
 }

@@ -22,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -29,20 +30,20 @@ import kmp.edu.leafon_kmp.presentation.components.global.LeafOnColors
 
 @Composable
 fun PotFormContent(
-    name: String,
     plantName: String,
+    humidityMin: String,
     deviceId: String,
     isSaving: Boolean,
     errorMessage: String?,
-    onNameChange: (String) -> Unit,
     onPlantNameChange: (String) -> Unit,
+    onHumidityMinChange: (String) -> Unit,
     onDeviceIdChange: (String) -> Unit,
     onSubmitClick: () -> Unit,
     modifier: Modifier = Modifier,
     onCancelClick: (() -> Unit)? = null,
-    title: String = "Cadastrar novo pot",
-    subtitle: String = "Informe os dados iniciais para conectar um novo vaso inteligente.",
-    submitLabel: String = "Salvar pot",
+    title: String = "Cadastrar novo vaso",
+    subtitle: String = "Informe os dados iniciais para conectar um novo SmartPot.",
+    submitLabel: String = "Salvar vaso",
 ) {
     Column(
         modifier = modifier
@@ -57,19 +58,22 @@ fun PotFormContent(
         )
 
         PotTextField(
-            label = "Nome do pot",
-            value = name,
-            onValueChange = onNameChange,
-            placeholder = "Ex: Vaso da sala",
-            enabled = !isSaving,
-        )
-
-        PotTextField(
             label = "Nome da planta",
             value = plantName,
             onValueChange = onPlantNameChange,
             placeholder = "Ex: Jiboia",
             enabled = !isSaving,
+        )
+
+        PotTextField(
+            label = "Umidade minima (%)",
+            value = humidityMin,
+            onValueChange = onHumidityMinChange,
+            placeholder = "Ex: 40",
+            enabled = !isSaving,
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Number,
+            ),
         )
 
         PotTextField(
@@ -126,6 +130,9 @@ private fun PotTextField(
     onValueChange: (String) -> Unit,
     placeholder: String,
     enabled: Boolean,
+    keyboardOptions: KeyboardOptions = KeyboardOptions(
+        capitalization = KeyboardCapitalization.Words,
+    ),
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(
@@ -144,9 +151,7 @@ private fun PotTextField(
                     color = LeafOnColors.TextSecondary,
                 )
             },
-            keyboardOptions = KeyboardOptions(
-                capitalization = KeyboardCapitalization.Words,
-            ),
+            keyboardOptions = keyboardOptions,
             shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
             modifier = Modifier.fillMaxWidth(),
             colors = OutlinedTextFieldDefaults.colors(

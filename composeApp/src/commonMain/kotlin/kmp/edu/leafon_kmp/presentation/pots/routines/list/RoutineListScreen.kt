@@ -14,22 +14,26 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kmp.edu.leafon_kmp.data.RepositorioRemoto
-import kmp.edu.leafon_kmp.data.RepositorioRemotoEmMemoria
+import kmp.edu.leafon_kmp.data.repository.RoutineRepository
 import kmp.edu.leafon_kmp.presentation.components.global.LeafOnColors
 import kmp.edu.leafon_kmp.presentation.components.layout.AppSidebar
 import kmp.edu.leafon_kmp.presentation.components.layout.AppTopBar
@@ -40,9 +44,10 @@ import kmp.edu.leafon_kmp.presentation.pots.routines.components.RoutineCard
 @Composable
 fun RoutineListScreen(
     potId: String,
-    repositorio: RepositorioRemoto = RepositorioRemotoEmMemoria(),
+    routineRepository: RoutineRepository,
     onBackClick: () -> Unit,
     onCreateRoutineClick: (String) -> Unit,
+    onEditRoutineClick: (String, String) -> Unit,
     onHomeClick: () -> Unit = {},
     onPotsClick: () -> Unit = onBackClick,
     onAlertsClick: () -> Unit = {},
@@ -50,11 +55,16 @@ fun RoutineListScreen(
     onNotificationsClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    val viewModel = remember(potId, repositorio) {
+    var routinePendingDeleteId by remember { mutableStateOf<String?>(null) }
+    val viewModel = remember(potId, routineRepository) {
         RoutineListViewModel(
             potId = potId,
-            repositorio = repositorio,
+            routineRepository = routineRepository,
         )
+    }
+
+    DisposableEffect(viewModel) {
+        onDispose { viewModel.onCleared() }
     }
 
     BoxWithConstraints(
@@ -70,6 +80,10 @@ fun RoutineListScreen(
                 onAction = viewModel::onAction,
                 onBackClick = onBackClick,
                 onCreateRoutineClick = onCreateRoutineClick,
+                onEditRoutineClick = onEditRoutineClick,
+                onDeleteRequest = { routineId ->
+                    routinePendingDeleteId = routineId
+                },
                 onHomeClick = onHomeClick,
                 onPotsClick = onPotsClick,
                 onAlertsClick = onAlertsClick,
@@ -82,11 +96,55 @@ fun RoutineListScreen(
                 onAction = viewModel::onAction,
                 onBackClick = onBackClick,
                 onCreateRoutineClick = onCreateRoutineClick,
+                onEditRoutineClick = onEditRoutineClick,
+                onDeleteRequest = { routineId ->
+                    routinePendingDeleteId = routineId
+                },
                 onHomeClick = onHomeClick,
                 onPotsClick = onPotsClick,
                 onAlertsClick = onAlertsClick,
                 onProfileClick = onProfileClick,
                 onNotificationsClick = onNotificationsClick,
+            )
+        }
+
+        if (routinePendingDeleteId != null) {
+            AlertDialog(
+                onDismissRequest = {
+                    routinePendingDeleteId = null
+                },
+                title = {
+                    Text("Excluir rotina")
+                },
+                text = {
+                    Text("Deseja excluir esta rotina? Esta acao nao pode ser desfeita.")
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            val routineId = routinePendingDeleteId
+                            routinePendingDeleteId = null
+                            if (routineId != null) {
+                                viewModel.onAction(RoutineListAction.OnDeleteRoutine(routineId))
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = LeafOnColors.Error,
+                            contentColor = LeafOnColors.TextOnDark,
+                        ),
+                    ) {
+                        Text("Excluir")
+                    }
+                },
+                dismissButton = {
+                    OutlinedButton(
+                        onClick = {
+                            routinePendingDeleteId = null
+                        },
+                    ) {
+                        Text("Cancelar")
+                    }
+                },
             )
         }
     }
@@ -98,6 +156,8 @@ private fun ExpandedRoutineListLayout(
     onAction: (RoutineListAction) -> Unit,
     onBackClick: () -> Unit,
     onCreateRoutineClick: (String) -> Unit,
+    onEditRoutineClick: (String, String) -> Unit,
+    onDeleteRequest: (String) -> Unit,
     onHomeClick: () -> Unit,
     onPotsClick: () -> Unit,
     onAlertsClick: () -> Unit,
@@ -132,6 +192,8 @@ private fun ExpandedRoutineListLayout(
                 onAction = onAction,
                 onBackClick = onBackClick,
                 onCreateRoutineClick = onCreateRoutineClick,
+                onEditRoutineClick = onEditRoutineClick,
+                onDeleteRequest = onDeleteRequest,
                 modifier = Modifier.weight(1f),
             )
         }
@@ -144,6 +206,8 @@ private fun CompactRoutineListLayout(
     onAction: (RoutineListAction) -> Unit,
     onBackClick: () -> Unit,
     onCreateRoutineClick: (String) -> Unit,
+    onEditRoutineClick: (String, String) -> Unit,
+    onDeleteRequest: (String) -> Unit,
     onHomeClick: () -> Unit,
     onPotsClick: () -> Unit,
     onAlertsClick: () -> Unit,
@@ -172,6 +236,8 @@ private fun CompactRoutineListLayout(
             onAction = onAction,
             onBackClick = onBackClick,
             onCreateRoutineClick = onCreateRoutineClick,
+            onEditRoutineClick = onEditRoutineClick,
+            onDeleteRequest = onDeleteRequest,
             modifier = Modifier.weight(1f),
         )
     }
@@ -183,6 +249,8 @@ private fun RoutineListContent(
     onAction: (RoutineListAction) -> Unit,
     onBackClick: () -> Unit,
     onCreateRoutineClick: (String) -> Unit,
+    onEditRoutineClick: (String, String) -> Unit,
+    onDeleteRequest: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -200,10 +268,28 @@ private fun RoutineListContent(
             },
         )
 
+        state.successMessage?.let { message ->
+            RoutineListFeedback(
+                message = message,
+                containerColor = LeafOnColors.Success.copy(alpha = 0.12f),
+                contentColor = LeafOnColors.Success,
+            )
+        }
+
+        state.errorMessage?.let { message ->
+            if (!state.isLoading) {
+                RoutineListFeedback(
+                    message = message,
+                    containerColor = LeafOnColors.Error.copy(alpha = 0.12f),
+                    contentColor = LeafOnColors.Error,
+                )
+            }
+        }
+
         when {
             state.isLoading -> RoutineListLoadingState()
-            state.errorMessage != null -> RoutineListErrorState(
-                message = state.errorMessage,
+            state.errorMessage != null && state.routines.isEmpty() -> RoutineListErrorState(
+                message = state.errorMessage.orEmpty(),
                 onRetryClick = { onAction(RoutineListAction.OnRetryClick) },
             )
             state.routines.isEmpty() -> RoutineListEmptyState(
@@ -216,8 +302,24 @@ private fun RoutineListContent(
                 state.routines.forEach { routine ->
                     RoutineCard(
                         routine = routine,
-                        onToggleClick = {
-                            onAction(RoutineListAction.OnToggleRoutine(routine.id))
+                        isBusy = state.busyRoutineId == routine.id,
+                        onEditClick = {
+                            onEditRoutineClick(state.potId, routine.id)
+                        },
+                        onToggleActiveClick = {
+                            onAction(
+                                if (routine.active) {
+                                    RoutineListAction.OnDeactivateRoutine(routine.id)
+                                } else {
+                                    RoutineListAction.OnActivateRoutine(routine.id)
+                                }
+                            )
+                        },
+                        onSimulateClick = {
+                            onAction(RoutineListAction.OnSimulateRoutine(routine.id))
+                        },
+                        onDeleteClick = {
+                            onDeleteRequest(routine.id)
                         },
                     )
                 }
@@ -263,13 +365,13 @@ private fun RoutineListTitle(modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Text(
-            text = "Rotinas de irrigacao",
+            text = "Rotinas do Smart Pot",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = LeafOnColors.TextPrimary,
         )
         Text(
-            text = "Controle os horarios de irrigacao automatica deste Smart Pot.",
+            text = "Gerencie rotinas logicas de irrigacao e iluminacao deste Smart Pot.",
             fontSize = 14.sp,
             color = LeafOnColors.TextSecondary,
         )
@@ -369,7 +471,7 @@ private fun RoutineListEmptyState(
             textAlign = TextAlign.Center,
         )
         Text(
-            text = "Crie a primeira automacao de irrigacao para este pot.",
+            text = "Crie a primeira rotina logica para este Smart Pot.",
             style = MaterialTheme.typography.bodyMedium,
             color = LeafOnColors.TextSecondary,
             textAlign = TextAlign.Center,
@@ -386,14 +488,34 @@ private fun RoutineListEmptyState(
     }
 }
 
+@Composable
+private fun RoutineListFeedback(
+    message: String,
+    containerColor: androidx.compose.ui.graphics.Color,
+    contentColor: androidx.compose.ui.graphics.Color,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(containerColor, RoundedCornerShape(10.dp))
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+    ) {
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodyMedium,
+            color = contentColor,
+        )
+    }
+}
+
 private fun routineListTopBarState(state: RoutineListState): AppTopBarState {
-    val enabledRoutines = state.routines.count { it.enabled }
+    val enabledRoutines = state.routines.count { it.active }
     val totalRoutines = state.routines.size
 
     return AppTopBarState(
         title = "Rotinas",
         subject = "$enabledRoutines/$totalRoutines rotinas ativas",
         subjectOnline = enabledRoutines > 0,
-        lastUpdateLabel = "Automacao de irrigacao",
+        lastUpdateLabel = "Configuracao logica do sistema",
     )
 }

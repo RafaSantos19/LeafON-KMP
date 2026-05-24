@@ -13,5 +13,6 @@ sealed interface AppDestination {
     data class EditPot(val potId: String) : AppDestination
     data class PotRoutines(val potId: String) : AppDestination
     data class CreateRoutine(val potId: String) : AppDestination
+    data class EditRoutine(val potId: String, val routineId: String) : AppDestination
     data class PotAlerts(val potId: String) : AppDestination
 }

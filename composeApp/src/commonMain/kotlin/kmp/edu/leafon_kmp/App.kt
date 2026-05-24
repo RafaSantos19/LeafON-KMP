@@ -42,7 +42,9 @@ fun App() {
     val navigator = remember(backStack) { AppNavigator(backStack) }
     val authRepository = AppDependencies.authRepository
     val smartPotRepository = AppDependencies.smartPotRepository
-    val repositorioRemoto = AppDependencies.repositorioRemoto
+    val alertRepository = AppDependencies.alertRepository
+    val routineRepository = AppDependencies.routineRepository
+    val telemetryRepository = AppDependencies.telemetryRepository
     val potListViewModel = remember {
         PotListViewModel(smartPotRepository = smartPotRepository)
     }
@@ -138,7 +140,17 @@ fun App() {
                     }
 
                     AppDestination.Home -> NavEntry(destination) {
-                        val homeViewModel = remember { HomeViewModel() }
+                        val homeViewModel = remember {
+                            HomeViewModel(
+                                smartPotRepository = smartPotRepository,
+                                telemetryRepository = telemetryRepository,
+                                alertRepository = alertRepository,
+                            )
+                        }
+
+                        DisposableEffect(homeViewModel) {
+                            onDispose { homeViewModel.onCleared() }
+                        }
 
                         DashboardScreen(
                             state = homeViewModel.state,
@@ -168,6 +180,7 @@ fun App() {
                         PotDetailScreen(
                             potId = potId,
                             smartPotRepository = smartPotRepository,
+                            telemetryRepository = telemetryRepository,
                             onBackClick = navigator::goBackOrPots,
                             onEditClick = navigator::goToEditPot,
                             onDeleteSuccess = {
@@ -187,7 +200,8 @@ fun App() {
 
                     AppDestination.Alerts -> NavEntry(destination) {
                         AlertListScreen(
-                            potId = "1",
+                            potId = "",
+                            alertRepository = alertRepository,
                             onBackClick = navigator::goBackOrHome,
                             onHomeClick = navigator::goToHome,
                             onPotsClick = navigator::goToPots,
@@ -201,6 +215,7 @@ fun App() {
 
                         AlertListScreen(
                             potId = potId,
+                            alertRepository = alertRepository,
                             onBackClick = {
                                 navigator.goBackOrPotDetail(potId)
                             },
@@ -216,11 +231,12 @@ fun App() {
 
                         RoutineListScreen(
                             potId = potId,
-                            repositorio = repositorioRemoto,
+                            routineRepository = routineRepository,
                             onBackClick = {
                                 navigator.goBackOrPotDetail(potId)
                             },
                             onCreateRoutineClick = navigator::goToCreateRoutine,
+                            onEditRoutineClick = navigator::goToEditRoutine,
                             onHomeClick = navigator::goToHome,
                             onPotsClick = navigator::goToPots,
                             onAlertsClick = {
@@ -235,11 +251,33 @@ fun App() {
 
                         CreateRoutineScreen(
                             potId = potId,
-                            repositorio = repositorioRemoto,
+                            routineRepository = routineRepository,
                             onBackClick = {
                                 navigator.goBackOrPotRoutines(potId)
                             },
-                            onRoutineCreated = {
+                            onRoutineSaved = {
+                                navigator.finishRoutineMutation(potId)
+                            },
+                            onHomeClick = navigator::goToHome,
+                            onPotsClick = navigator::goToPots,
+                            onAlertsClick = {
+                                navigator.goToPotAlerts(potId)
+                            },
+                            onProfileClick = navigator::goToProfile,
+                        )
+                    }
+
+                    is AppDestination.EditRoutine -> NavEntry(destination) {
+                        val potId = destination.potId
+
+                        CreateRoutineScreen(
+                            potId = potId,
+                            routineId = destination.routineId,
+                            routineRepository = routineRepository,
+                            onBackClick = {
+                                navigator.goBackOrPotRoutines(potId)
+                            },
+                            onRoutineSaved = {
                                 navigator.finishRoutineMutation(potId)
                             },
                             onHomeClick = navigator::goToHome,

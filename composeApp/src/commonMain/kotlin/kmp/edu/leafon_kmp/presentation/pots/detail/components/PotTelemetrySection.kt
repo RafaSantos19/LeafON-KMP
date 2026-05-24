@@ -11,9 +11,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Dns
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.LightMode
+import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.Thermostat
 import androidx.compose.material.icons.outlined.WaterDrop
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -23,12 +27,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kmp.edu.leafon_kmp.core.model.TelemetryReading
 import kmp.edu.leafon_kmp.presentation.components.global.LeafOnColors
+import kotlin.math.pow
+import kotlin.math.round
 
 @Composable
 fun PotTelemetrySection(
+    latestTelemetry: TelemetryReading?,
+    isTelemetryLoading: Boolean,
+    telemetryErrorMessage: String?,
+    feedbackMessage: String?,
     humidityMin: Int?,
     deviceId: String?,
     modifier: Modifier = Modifier,
@@ -38,11 +50,25 @@ fun PotTelemetrySection(
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         Text(
-            text = "Dados principais",
+            text = "Ultima telemetria",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
             color = LeafOnColors.TextPrimary,
         )
+
+        if (feedbackMessage != null) {
+            TelemetryInfoCard(
+                message = feedbackMessage,
+                tint = LeafOnColors.Success,
+            )
+        }
+
+        if (telemetryErrorMessage != null && latestTelemetry == null) {
+            TelemetryInfoCard(
+                message = telemetryErrorMessage,
+                tint = LeafOnColors.Warning,
+            )
+        }
 
         Column(
             modifier = Modifier.fillMaxWidth(),
@@ -51,10 +77,41 @@ fun PotTelemetrySection(
             TelemetryCard(
                 item = TelemetryItem(
                     icon = Icons.Outlined.WaterDrop,
-                    label = "Umidade minima",
-                    value = humidityMin?.let { "$it%" } ?: "-",
-                    helper = "Configuracao enviada para a API",
+                    label = "Umidade do solo",
+                    value = latestTelemetry?.soilHumidity?.let { "$it%" } ?: "-",
+                    helper = if (latestTelemetry != null) {
+                        "Minimo configurado: ${humidityMin?.let { "$it%" } ?: "-"}"
+                    } else {
+                        "Nenhuma leitura registrada ainda."
+                    },
                     tint = LeafOnColors.GreenPrimary,
+                ),
+            )
+            TelemetryCard(
+                item = TelemetryItem(
+                    icon = Icons.Outlined.Thermostat,
+                    label = "Temperatura",
+                    value = latestTelemetry?.temperature?.let { "${it.format(1)} C" } ?: "-",
+                    helper = "Ultima leitura de temperatura",
+                    tint = LeafOnColors.TextPrimary,
+                ),
+            )
+            TelemetryCard(
+                item = TelemetryItem(
+                    icon = Icons.Outlined.LightMode,
+                    label = "Luminosidade",
+                    value = latestTelemetry?.luminosity?.let { it.format(1) } ?: "-",
+                    helper = "Ultima leitura de luminosidade",
+                    tint = LeafOnColors.Warning,
+                ),
+            )
+            TelemetryCard(
+                item = TelemetryItem(
+                    icon = Icons.Outlined.Schedule,
+                    label = "Read At",
+                    value = latestTelemetry?.readAt ?: "-",
+                    helper = "Timestamp retornado pela API",
+                    tint = LeafOnColors.TextSecondary,
                 ),
             )
             TelemetryCard(
@@ -62,19 +119,52 @@ fun PotTelemetrySection(
                     icon = Icons.Outlined.Dns,
                     label = "Device ID",
                     value = deviceId ?: "-",
-                    helper = "Vinculo atual do dispositivo",
+                    helper = if (isTelemetryLoading) {
+                        "Carregando leitura mais recente..."
+                    } else {
+                        "Vinculo atual do dispositivo"
+                    },
                     tint = LeafOnColors.TextPrimary,
                 ),
             )
-            TelemetryCard(
-                item = TelemetryItem(
-                    icon = Icons.Outlined.Info,
-                    label = "Telemetria",
-                    value = "Pendente",
-                    helper = "Telemetria ainda nao integrada nesta fase",
-                    tint = LeafOnColors.Warning,
-                ),
-            )
+
+            when {
+                isTelemetryLoading -> {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        CircularProgressIndicator(
+                            color = LeafOnColors.GreenPrimary,
+                            strokeWidth = 2.dp,
+                            modifier = Modifier.size(20.dp),
+                        )
+                        Text(
+                            text = "Carregando ultima leitura...",
+                            fontSize = 13.sp,
+                            color = LeafOnColors.TextSecondary,
+                            modifier = Modifier.padding(start = 10.dp),
+                        )
+                    }
+                }
+
+                latestTelemetry == null && telemetryErrorMessage == null -> {
+                    TelemetryInfoCard(
+                        message = "Nenhuma leitura registrada ainda.",
+                        tint = LeafOnColors.TextSecondary,
+                    )
+                }
+
+                telemetryErrorMessage != null && latestTelemetry != null -> {
+                    TelemetryInfoCard(
+                        message = telemetryErrorMessage,
+                        tint = LeafOnColors.Warning,
+                    )
+                }
+            }
         }
     }
 }
@@ -113,6 +203,8 @@ private fun TelemetryCard(
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     color = LeafOnColors.TextPrimary,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
                 )
                 Text(
                     text = item.helper,
@@ -151,3 +243,43 @@ private data class TelemetryItem(
     val helper: String,
     val tint: Color,
 )
+
+@Composable
+private fun TelemetryInfoCard(
+    message: String,
+    tint: Color,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = tint.copy(alpha = 0.1f),
+        ),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.Info,
+                contentDescription = null,
+                tint = tint,
+                modifier = Modifier.size(18.dp),
+            )
+            Text(
+                text = message,
+                fontSize = 13.sp,
+                color = LeafOnColors.TextPrimary,
+            )
+        }
+    }
+}
+
+private fun Double.format(decimals: Int): String {
+    val factor = 10.0.pow(decimals)
+    val rounded = round(this * factor) / factor
+    return rounded.toString()
+}

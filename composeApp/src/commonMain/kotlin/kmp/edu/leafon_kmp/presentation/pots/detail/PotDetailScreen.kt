@@ -13,13 +13,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -32,6 +36,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kmp.edu.leafon_kmp.data.repository.TelemetryRepository
+import kmp.edu.leafon_kmp.data.repository.TelemetryRepositoryMemory
 import kmp.edu.leafon_kmp.data.repository.SmartPotRepository
 import kmp.edu.leafon_kmp.data.repository.SmartPotRepositoryMemory
 import kmp.edu.leafon_kmp.presentation.components.global.LeafOnColors
@@ -47,6 +53,7 @@ import kmp.edu.leafon_kmp.presentation.pots.detail.components.PotTelemetrySectio
 fun PotDetailScreen(
     potId: String,
     smartPotRepository: SmartPotRepository = SmartPotRepositoryMemory(),
+    telemetryRepository: TelemetryRepository = TelemetryRepositoryMemory(),
     onBackClick: () -> Unit,
     onEditClick: (String) -> Unit,
     onDeleteSuccess: () -> Unit,
@@ -60,10 +67,11 @@ fun PotDetailScreen(
     modifier: Modifier = Modifier,
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
-    val viewModel = remember(potId, smartPotRepository) {
+    val viewModel = remember(potId, smartPotRepository, telemetryRepository) {
         PotDetailViewModel(
             potId = potId,
             smartPotRepository = smartPotRepository,
+            telemetryRepository = telemetryRepository,
         )
     }
 
@@ -212,6 +220,7 @@ private fun PotDetailContent(
             else -> PotDetailLoadedContent(
                 state = state,
                 onAction = onAction,
+                onBackClick = onBackClick,
                 onEditClick = onEditClick,
                 onDeleteClick = onDeleteClick,
                 onViewRoutinesClick = onViewRoutinesClick,
@@ -225,6 +234,7 @@ private fun PotDetailContent(
 private fun PotDetailLoadedContent(
     state: PotDetailState,
     onAction: (PotDetailAction) -> Unit,
+    onBackClick: () -> Unit,
     onEditClick: (String) -> Unit,
     onDeleteClick: () -> Unit,
     onViewRoutinesClick: (String) -> Unit,
@@ -236,16 +246,23 @@ private fun PotDetailLoadedContent(
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(22.dp),
     ) {
+        PotDetailBackButton(
+            onBackClick = onBackClick,
+        )
+
         PotDetailIntro()
 
         PotDetailHeader(
             plantName = state.plantName,
             deviceId = state.deviceId,
             humidityMin = state.humidityMin,
-            updatedAt = state.updatedAt,
         )
 
         PotTelemetrySection(
+            latestTelemetry = state.latestTelemetry,
+            isTelemetryLoading = state.isTelemetryLoading,
+            telemetryErrorMessage = state.telemetryErrorMessage,
+            feedbackMessage = state.feedbackMessage,
             humidityMin = state.humidityMin,
             deviceId = state.deviceId,
         )
@@ -256,6 +273,9 @@ private fun PotDetailLoadedContent(
                 onEditClick(state.potId)
             },
             onDeleteClick = onDeleteClick,
+            onGenerateTelemetryClick = {
+                onAction(PotDetailAction.OnGenerateTelemetryClick)
+            },
             onViewRoutinesClick = {
                 onAction(PotDetailAction.OnViewRoutinesClick)
                 onViewRoutinesClick(state.potId)
@@ -265,7 +285,26 @@ private fun PotDetailLoadedContent(
                 onViewAlertsClick(state.potId)
             },
             isDeleting = state.isDeleting,
+            isSendingTelemetry = state.isSendingTelemetry,
         )
+    }
+}
+
+@Composable
+private fun PotDetailBackButton(
+    onBackClick: () -> Unit,
+) {
+    OutlinedButton(
+        onClick = onBackClick,
+        colors = ButtonDefaults.outlinedButtonColors(
+            contentColor = LeafOnColors.TextPrimary,
+        ),
+    ) {
+        Icon(
+            imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+            contentDescription = null,
+        )
+        Text("Voltar")
     }
 }
 
@@ -345,12 +384,11 @@ private fun PotDetailErrorState(
 
 private fun potDetailTopBarState(state: PotDetailState): AppTopBarState {
     val subject = state.plantName.ifBlank { "Smart Pot" }
-    val lastUpdate = state.updatedAt ?: state.createdAt ?: "carregando"
 
     return AppTopBarState(
         title = "Detalhe do pot",
         subject = subject,
         subjectOnline = state.deviceId != null,
-        lastUpdateLabel = "Ultima atualizacao: $lastUpdate",
+        lastUpdateLabel = "Dados do Smart Pot",
     )
 }

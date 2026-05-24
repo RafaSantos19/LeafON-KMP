@@ -20,6 +20,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -28,18 +29,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kmp.edu.leafon_kmp.core.model.AlertStatus
+import kmp.edu.leafon_kmp.data.repository.AlertRepository
 import kmp.edu.leafon_kmp.presentation.components.global.LeafOnColors
 import kmp.edu.leafon_kmp.presentation.components.layout.AppSidebar
 import kmp.edu.leafon_kmp.presentation.components.layout.AppTopBar
 import kmp.edu.leafon_kmp.presentation.components.layout.AppTopBarState
 import kmp.edu.leafon_kmp.presentation.components.layout.SidebarDestination
 import kmp.edu.leafon_kmp.presentation.pots.alerts.components.AlertCard
-import kmp.edu.leafon_kmp.presentation.pots.alerts.model.AlertSeverity
-import kmp.edu.leafon_kmp.presentation.pots.alerts.model.AlertStatus
 
 @Composable
 fun AlertListScreen(
     potId: String,
+    alertRepository: AlertRepository,
     onBackClick: () -> Unit,
     onHomeClick: () -> Unit = {},
     onPotsClick: () -> Unit = onBackClick,
@@ -48,8 +50,15 @@ fun AlertListScreen(
     onNotificationsClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    val viewModel = remember(potId) {
-        AlertListViewModel(potId = potId)
+    val viewModel = remember(potId, alertRepository) {
+        AlertListViewModel(
+            potId = potId,
+            alertRepository = alertRepository,
+        )
+    }
+
+    DisposableEffect(viewModel) {
+        onDispose { viewModel.onCleared() }
     }
 
     BoxWithConstraints(
@@ -181,22 +190,53 @@ private fun AlertListContent(
         verticalArrangement = Arrangement.spacedBy(22.dp),
     ) {
         AlertListHeader(
+            state = state,
+            onFilterChange = { showUnreadOnly ->
+                onAction(AlertListAction.OnUnreadFilterChange(showUnreadOnly))
+            },
             onBackClick = {
                 onAction(AlertListAction.OnBackClick)
                 onBackClick()
             },
         )
 
+        state.successMessage?.let { message ->
+            AlertListFeedbackCard(
+                message = message,
+                containerColor = LeafOnColors.Success.copy(alpha = 0.12f),
+                contentColor = LeafOnColors.Success,
+            )
+        }
+
+        state.errorMessage?.let { message ->
+            if (!state.isLoading) {
+                AlertListFeedbackCard(
+                    message = message,
+                    containerColor = LeafOnColors.Error.copy(alpha = 0.12f),
+                    contentColor = LeafOnColors.Error,
+                )
+            }
+        }
+
         when {
             state.isLoading -> AlertListLoadingState()
-            state.errorMessage != null -> AlertListErrorState(
-                message = state.errorMessage,
+            state.errorMessage != null && state.alerts.isEmpty() -> AlertListErrorState(
+                message = state.errorMessage.orEmpty(),
                 onRetryClick = { onAction(AlertListAction.OnRetryClick) },
             )
-            state.alerts.isEmpty() -> AlertListEmptyState()
+            state.alerts.isEmpty() -> AlertListEmptyState(
+                showUnreadOnly = state.showUnreadOnly,
+                potId = state.potId,
+            )
             else -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 state.alerts.forEach { alert ->
-                    AlertCard(alert = alert)
+                    AlertCard(
+                        alert = alert,
+                        onMarkAsReadClick = { alertId ->
+                            onAction(AlertListAction.OnMarkAsReadClick(alertId))
+                        },
+                        isUpdating = state.isMarkingAsRead && state.markingAlertId == alert.id,
+                    )
                 }
             }
         }
@@ -205,6 +245,8 @@ private fun AlertListContent(
 
 @Composable
 private fun AlertListHeader(
+    state: AlertListState,
+    onFilterChange: (Boolean) -> Unit,
     onBackClick: () -> Unit,
 ) {
     BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
@@ -214,7 +256,10 @@ private fun AlertListHeader(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                AlertListTitle(modifier = Modifier.weight(1f))
+                AlertListTitle(
+                    potId = state.potId,
+                    modifier = Modifier.weight(1f),
+                )
                 OutlinedButton(
                     onClick = onBackClick,
                     shape = RoundedCornerShape(8.dp),
@@ -224,7 +269,7 @@ private fun AlertListHeader(
             }
         } else {
             Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                AlertListTitle()
+                AlertListTitle(potId = state.potId)
                 OutlinedButton(
                     onClick = onBackClick,
                     shape = RoundedCornerShape(8.dp),
@@ -234,22 +279,81 @@ private fun AlertListHeader(
             }
         }
     }
+
+    AlertFilterRow(
+        showUnreadOnly = state.showUnreadOnly,
+        onFilterChange = onFilterChange,
+    )
 }
 
 @Composable
-private fun AlertListTitle(modifier: Modifier = Modifier) {
+private fun AlertFilterRow(
+    showUnreadOnly: Boolean,
+    onFilterChange: (Boolean) -> Unit,
+) {
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        AlertFilterButton(
+            label = "Todos",
+            selected = !showUnreadOnly,
+            onClick = { onFilterChange(false) },
+        )
+        AlertFilterButton(
+            label = "Nao lidos",
+            selected = showUnreadOnly,
+            onClick = { onFilterChange(true) },
+        )
+    }
+}
+
+@Composable
+private fun AlertFilterButton(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    if (selected) {
+        Button(
+            onClick = onClick,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = LeafOnColors.GreenPrimary,
+                contentColor = LeafOnColors.TextOnDark,
+            ),
+        ) {
+            Text(label)
+        }
+    } else {
+        OutlinedButton(
+            onClick = onClick,
+            shape = RoundedCornerShape(8.dp),
+        ) {
+            Text(label)
+        }
+    }
+}
+
+@Composable
+private fun AlertListTitle(
+    potId: String,
+    modifier: Modifier = Modifier,
+) {
+    val isPotSpecific = potId.isNotBlank()
+
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Text(
-            text = "Alertas do pot",
+            text = if (isPotSpecific) "Alertas do pot" else "Alertas",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = LeafOnColors.TextPrimary,
         )
         Text(
-            text = "Acompanhe eventos ativos e ocorrencias recentes deste Smart Pot.",
+            text = if (isPotSpecific) {
+                "Acompanhe eventos deste Smart Pot e marque os alertas como lidos."
+            } else {
+                "Veja os alertas da sua conta e filtre apenas os nao lidos."
+            },
             fontSize = 14.sp,
             color = LeafOnColors.TextSecondary,
         )
@@ -306,7 +410,42 @@ private fun AlertListErrorState(
 }
 
 @Composable
-private fun AlertListEmptyState() {
+private fun AlertListFeedbackCard(
+    message: String,
+    containerColor: androidx.compose.ui.graphics.Color,
+    contentColor: androidx.compose.ui.graphics.Color,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(containerColor, RoundedCornerShape(10.dp))
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+    ) {
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodyMedium,
+            color = contentColor,
+        )
+    }
+}
+
+@Composable
+private fun AlertListEmptyState(
+    showUnreadOnly: Boolean,
+    potId: String,
+) {
+    val isPotSpecific = potId.isNotBlank()
+    val title = when {
+        showUnreadOnly -> "Nenhum alerta nao lido."
+        isPotSpecific -> "Nenhum alerta registrado para este pot."
+        else -> "Nenhum alerta registrado."
+    }
+    val description = when {
+        showUnreadOnly -> "Todos os alertas ja foram marcados como lidos."
+        isPotSpecific -> "Este Smart Pot ainda nao gerou alertas."
+        else -> "Sua conta ainda nao possui ocorrencias recentes."
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -315,14 +454,14 @@ private fun AlertListEmptyState() {
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(
-            text = "Nenhum alerta registrado.",
+            text = title,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
             color = LeafOnColors.TextPrimary,
             textAlign = TextAlign.Center,
         )
         Text(
-            text = "Este pot nao possui ocorrencias recentes.",
+            text = description,
             style = MaterialTheme.typography.bodyMedium,
             color = LeafOnColors.TextSecondary,
             textAlign = TextAlign.Center,
@@ -331,20 +470,22 @@ private fun AlertListEmptyState() {
 }
 
 private fun alertListTopBarState(state: AlertListState): AppTopBarState {
-    val activeAlerts = state.alerts.count { it.status == AlertStatus.ACTIVE }
-    val criticalAlerts = state.alerts.count {
-        it.status == AlertStatus.ACTIVE && it.severity == AlertSeverity.CRITICAL
-    }
+    val activeAlerts = state.alerts.count { it.status == AlertStatus.PENDING }
     val subject = when {
-        criticalAlerts > 0 -> "$criticalAlerts alertas criticos"
-        activeAlerts > 0 -> "$activeAlerts alertas ativos"
-        else -> "Sem alertas ativos"
+        state.isLoading -> "Carregando alertas"
+        activeAlerts > 0 -> "$activeAlerts alertas pendentes"
+        state.showUnreadOnly -> "Sem alertas nao lidos"
+        else -> "Sem alertas pendentes"
     }
 
     return AppTopBarState(
         title = "Alertas",
         subject = subject,
         subjectOnline = activeAlerts == 0,
-        lastUpdateLabel = "Eventos recentes do pot",
+        lastUpdateLabel = if (state.potId.isBlank()) {
+            "Eventos recentes da conta"
+        } else {
+            "Eventos recentes do pot"
+        },
     )
 }

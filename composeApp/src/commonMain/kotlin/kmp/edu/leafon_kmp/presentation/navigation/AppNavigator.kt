@@ -55,6 +55,13 @@ internal class AppNavigator(
         navigate(AppDestination.CreateRoutine(potId))
     }
 
+    fun goToEditRoutine(
+        potId: String,
+        routineId: String,
+    ) {
+        navigate(AppDestination.EditRoutine(potId, routineId))
+    }
+
     fun goToPotAlerts(potId: String) {
         if (potId.isBlank()) {
             goToAlerts()

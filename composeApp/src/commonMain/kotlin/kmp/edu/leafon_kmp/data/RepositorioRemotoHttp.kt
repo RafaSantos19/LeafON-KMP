@@ -1,6 +1,7 @@
 package kmp.edu.leafon_kmp.data
 
 import kmp.edu.leafon_kmp.core.model.SmartPot
+import kmp.edu.leafon_kmp.core.time.ReadableTimestampFormatter
 import kmp.edu.leafon_kmp.data.repository.SmartPotRepository
 import kmp.edu.leafon_kmp.presentation.pots.model.PotStatus
 import kmp.edu.leafon_kmp.presentation.pots.model.PotUi
@@ -148,7 +149,9 @@ private fun SmartPot.toLegacyPotUi(): PotUi {
         status = PotStatus.OFFLINE,
         humidityPercent = humidityMin,
         temperatureCelsius = null,
-        lastUpdateLabel = updatedAt ?: createdAt ?: "Sem telemetria integrada",
+        lastUpdateLabel = ReadableTimestampFormatter.formatOrFallback(
+            updatedAt ?: createdAt
+        ) ?: "Sem telemetria integrada",
         deviceId = deviceId.orEmpty(),
     )
 }

@@ -1,6 +1,8 @@
 package kmp.edu.leafon_kmp.presentation.pots.routines.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,30 +12,50 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.LightMode
+import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.ToggleOff
+import androidx.compose.material.icons.outlined.ToggleOn
 import androidx.compose.material.icons.outlined.WaterDrop
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Switch
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kmp.edu.leafon_kmp.core.model.Routine
+import kmp.edu.leafon_kmp.core.model.RoutineType
+import kmp.edu.leafon_kmp.core.time.ReadableTimestampFormatter
 import kmp.edu.leafon_kmp.presentation.components.global.LeafOnColors
-import kmp.edu.leafon_kmp.presentation.pots.routines.model.RoutineUi
+import kmp.edu.leafon_kmp.presentation.pots.routines.model.label
+import kmp.edu.leafon_kmp.presentation.pots.routines.model.statusLabel
+import kmp.edu.leafon_kmp.presentation.pots.routines.model.toDaysLabel
 
 @Composable
 fun RoutineCard(
-    routine: RoutineUi,
-    onToggleClick: () -> Unit,
+    routine: Routine,
+    isBusy: Boolean,
+    onEditClick: () -> Unit,
+    onToggleActiveClick: () -> Unit,
+    onSimulateClick: () -> Unit,
+    onDeleteClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Card(
@@ -41,44 +63,126 @@ fun RoutineCard(
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(containerColor = LeafOnColors.BgMain),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = BorderStroke(
+            width = 1.dp,
+            color = if (routine.active) LeafOnColors.GreenPrimary.copy(alpha = 0.25f) else LeafOnColors.BorderDefault,
+        ),
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(18.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            RoutineIcon(enabled = routine.enabled)
-
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+            Row(
+                verticalAlignment = Alignment.Top,
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
             ) {
-                Text(
-                    text = routine.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = LeafOnColors.TextPrimary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                RoutineIcon(type = routine.type, active = routine.active)
 
-                RoutineScheduleInfo(routine = routine)
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        text = routine.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = LeafOnColors.TextPrimary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+
+                    Row(
+                        modifier = Modifier.horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        RoutineBadge(
+                            label = routine.type.label(),
+                            color = if (routine.type == RoutineType.LIGHTING) Color(0xFF8A6D00) else LeafOnColors.GreenPrimary,
+                        )
+                        RoutineBadge(
+                            label = routine.statusLabel(),
+                            color = if (routine.active) LeafOnColors.Success else LeafOnColors.TextSecondary,
+                        )
+                    }
+                }
             }
 
-            Switch(
-                checked = routine.enabled,
-                onCheckedChange = { onToggleClick() },
+            RoutineScheduleInfo(routine = routine)
+            RoutineExecutionInfo(routine = routine)
+
+            Text(
+                text = "Simular execucao nao aciona hardware fisico.",
+                fontSize = 12.sp,
+                color = LeafOnColors.TextSecondary,
             )
+
+            Row(
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                OutlinedButton(
+                    onClick = onEditClick,
+                    enabled = !isBusy,
+                ) {
+                    Icon(Icons.Outlined.Edit, contentDescription = null)
+                    Spacer(Modifier.width(6.dp))
+                    Text("Editar")
+                }
+
+                Button(
+                    onClick = onToggleActiveClick,
+                    enabled = !isBusy,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (routine.active) LeafOnColors.TextSecondary else LeafOnColors.GreenPrimary,
+                        contentColor = LeafOnColors.TextOnDark,
+                    ),
+                ) {
+                    Icon(
+                        imageVector = if (routine.active) Icons.Outlined.ToggleOff else Icons.Outlined.ToggleOn,
+                        contentDescription = null,
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(if (routine.active) "Desativar" else "Ativar")
+                }
+
+                OutlinedButton(
+                    onClick = onSimulateClick,
+                    enabled = !isBusy,
+                ) {
+                    Icon(Icons.Outlined.PlayArrow, contentDescription = null)
+                    Spacer(Modifier.width(6.dp))
+                    Text("Simular")
+                }
+
+                OutlinedButton(
+                    onClick = onDeleteClick,
+                    enabled = !isBusy,
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = LeafOnColors.Error,
+                    ),
+                ) {
+                    Icon(Icons.Outlined.Delete, contentDescription = null)
+                    Spacer(Modifier.width(6.dp))
+                    Text("Excluir")
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun RoutineIcon(enabled: Boolean) {
-    val iconColor = if (enabled) LeafOnColors.GreenPrimary else LeafOnColors.TextSecondary
-    val containerColor = if (enabled) LeafOnColors.BgSoftGreen else LeafOnColors.BgSecondary
+private fun RoutineIcon(
+    type: RoutineType,
+    active: Boolean,
+) {
+    val iconColor = when {
+        !active -> LeafOnColors.TextSecondary
+        type == RoutineType.LIGHTING -> Color(0xFF8A6D00)
+        else -> LeafOnColors.GreenPrimary
+    }
+    val containerColor = if (active) LeafOnColors.BgSoftGreen else LeafOnColors.BgSecondary
 
     Box(
         modifier = Modifier
@@ -87,7 +191,11 @@ private fun RoutineIcon(enabled: Boolean) {
         contentAlignment = Alignment.Center,
     ) {
         Icon(
-            imageVector = Icons.Outlined.WaterDrop,
+            imageVector = if (type == RoutineType.LIGHTING) {
+                Icons.Outlined.LightMode
+            } else {
+                Icons.Outlined.WaterDrop
+            },
             contentDescription = null,
             tint = iconColor,
             modifier = Modifier.size(23.dp),
@@ -96,7 +204,33 @@ private fun RoutineIcon(enabled: Boolean) {
 }
 
 @Composable
-private fun RoutineScheduleInfo(routine: RoutineUi) {
+private fun RoutineBadge(
+    label: String,
+    color: Color,
+) {
+    Row(
+        modifier = Modifier
+            .background(color.copy(alpha = 0.14f), RoundedCornerShape(20.dp))
+            .padding(horizontal = 10.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(7.dp)
+                .background(color, CircleShape),
+        )
+        Spacer(Modifier.width(6.dp))
+        Text(
+            text = label,
+            color = color,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold,
+        )
+    }
+}
+
+@Composable
+private fun RoutineScheduleInfo(routine: Routine) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
@@ -107,18 +241,42 @@ private fun RoutineScheduleInfo(routine: RoutineUi) {
             )
             Spacer(Modifier.width(5.dp))
             Text(
-                text = "${routine.timeLabel} - ${routine.durationSec}s",
+                text = "${routine.scheduledTime} - ${routine.durationSec}s",
                 fontSize = 13.sp,
                 color = LeafOnColors.TextSecondary,
             )
         }
 
         Text(
-            text = routine.daysLabel,
+            text = routine.daysOfWeek.toDaysLabel(),
             fontSize = 13.sp,
             color = LeafOnColors.TextSecondary,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
+    }
+}
+
+@Composable
+private fun RoutineExecutionInfo(routine: Routine) {
+    val lastExecuted = ReadableTimestampFormatter.formatOrFallback(routine.lastExecutedAt)
+    val updatedAt = ReadableTimestampFormatter.formatOrFallback(routine.updatedAt ?: routine.createdAt)
+
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        if (!lastExecuted.isNullOrBlank()) {
+            Text(
+                text = "Ultima simulacao: $lastExecuted",
+                fontSize = 13.sp,
+                color = LeafOnColors.TextSecondary,
+            )
+        }
+
+        if (!updatedAt.isNullOrBlank()) {
+            Text(
+                text = "Atualizado em: $updatedAt",
+                fontSize = 13.sp,
+                color = LeafOnColors.TextSecondary,
+            )
+        }
     }
 }

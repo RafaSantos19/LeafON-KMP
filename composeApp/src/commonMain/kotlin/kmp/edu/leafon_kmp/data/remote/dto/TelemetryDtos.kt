@@ -15,7 +15,7 @@ data class TelemetryResponseDto(
 
 @Serializable
 data class CreateTelemetryRequestDto(
-    val smartPotId: String? = null,
+    val smartPotId: String,
     val soilHumidity: Int,
     val temperature: Double,
     val luminosity: Double,

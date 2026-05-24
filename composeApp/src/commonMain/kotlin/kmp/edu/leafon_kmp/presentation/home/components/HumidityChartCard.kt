@@ -23,13 +23,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kmp.edu.leafon_kmp.presentation.components.global.LeafOnColors
 
-enum class ChartRange(val label: String) {
-    H24("24h"),
-    D7("7 dias"),
-    D15("15 dias"),
-    D30("30 dias"),
-}
-
 @Composable
 fun HumidityChartCard(
     selectedRange: ChartRange = ChartRange.H24,

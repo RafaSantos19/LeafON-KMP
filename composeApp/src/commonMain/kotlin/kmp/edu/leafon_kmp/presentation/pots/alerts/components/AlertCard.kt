@@ -15,6 +15,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -23,32 +25,33 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kmp.edu.leafon_kmp.core.model.Alert
+import kmp.edu.leafon_kmp.core.model.AlertStatus
+import kmp.edu.leafon_kmp.core.time.ReadableTimestampFormatter
 import kmp.edu.leafon_kmp.presentation.components.global.LeafOnColors
-import kmp.edu.leafon_kmp.presentation.pots.alerts.model.AlertSeverity
-import kmp.edu.leafon_kmp.presentation.pots.alerts.model.AlertStatus
-import kmp.edu.leafon_kmp.presentation.pots.alerts.model.AlertUi
+import kmp.edu.leafon_kmp.presentation.pots.alerts.model.typeLabel
 
 @Composable
 fun AlertCard(
-    alert: AlertUi,
+    alert: Alert,
+    onMarkAsReadClick: (String) -> Unit,
+    isUpdating: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val isCriticalActive = alert.severity == AlertSeverity.CRITICAL &&
-        alert.status == AlertStatus.ACTIVE
+    val isPending = alert.status == AlertStatus.PENDING
 
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(containerColor = LeafOnColors.BgMain),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isCriticalActive) 3.dp else 2.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isPending) 3.dp else 2.dp),
         border = BorderStroke(
             width = 1.dp,
-            color = if (isCriticalActive) LeafOnColors.Error.copy(alpha = 0.35f) else LeafOnColors.BorderDefault,
+            color = if (isPending) LeafOnColors.Error.copy(alpha = 0.35f) else LeafOnColors.BorderDefault,
         ),
     ) {
         Row(
@@ -59,8 +62,7 @@ fun AlertCard(
             horizontalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             AlertIcon(
-                severity = alert.severity,
-                active = alert.status == AlertStatus.ACTIVE,
+                status = alert.status,
             )
 
             Column(
@@ -70,23 +72,46 @@ fun AlertCard(
                 AlertCardHeader(alert = alert)
 
                 Text(
-                    text = alert.description,
+                    text = alert.message,
                     style = MaterialTheme.typography.bodyMedium,
                     color = LeafOnColors.TextSecondary,
                     lineHeight = 20.sp,
                 )
 
-                AlertTimestamp(createdAtLabel = alert.createdAtLabel)
+                AlertTimestamp(
+                    createdAt = ReadableTimestampFormatter.formatOrFallback(alert.createdAt).orEmpty(),
+                    readAt = ReadableTimestampFormatter.formatOrFallback(alert.readAt),
+                )
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (isPending) {
+                        Button(
+                            onClick = {
+                                onMarkAsReadClick(alert.id)
+                            },
+                            enabled = !isUpdating,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = LeafOnColors.GreenPrimary,
+                                contentColor = LeafOnColors.TextOnDark,
+                            ),
+                        ) {
+                            Text(if (isUpdating) "Atualizando..." else "Marcar como lido")
+                        }
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
-private fun AlertCardHeader(alert: AlertUi) {
+private fun AlertCardHeader(alert: Alert) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
-            text = alert.title,
+            text = alert.typeLabel(),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
             color = LeafOnColors.TextPrimary,
@@ -98,7 +123,7 @@ private fun AlertCardHeader(alert: AlertUi) {
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            AlertStatusBadge(severity = alert.severity)
+            AlertStatusBadge(type = alert.type)
             AlertStatusBadge(status = alert.status)
         }
     }
@@ -106,10 +131,10 @@ private fun AlertCardHeader(alert: AlertUi) {
 
 @Composable
 private fun AlertIcon(
-    severity: AlertSeverity,
-    active: Boolean,
+    status: AlertStatus,
 ) {
-    val iconColor = severityColor(severity)
+    val active = status == AlertStatus.PENDING
+    val iconColor = if (active) LeafOnColors.Error else LeafOnColors.Success
     val containerColor = if (active) {
         iconColor.copy(alpha = 0.12f)
     } else {
@@ -132,27 +157,32 @@ private fun AlertIcon(
 }
 
 @Composable
-private fun AlertTimestamp(createdAtLabel: String) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(
-            imageVector = Icons.Outlined.Schedule,
-            contentDescription = null,
-            tint = LeafOnColors.TextSecondary,
-            modifier = Modifier.size(14.dp),
-        )
-        Spacer(Modifier.width(5.dp))
-        Text(
-            text = createdAtLabel,
-            fontSize = 13.sp,
-            color = LeafOnColors.TextSecondary,
-        )
-    }
-}
+private fun AlertTimestamp(
+    createdAt: String,
+    readAt: String?,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = Icons.Outlined.Schedule,
+                contentDescription = null,
+                tint = LeafOnColors.TextSecondary,
+                modifier = Modifier.size(14.dp),
+            )
+            Spacer(Modifier.width(5.dp))
+            Text(
+                text = "Criado em $createdAt",
+                fontSize = 13.sp,
+                color = LeafOnColors.TextSecondary,
+            )
+        }
 
-private fun severityColor(severity: AlertSeverity): Color {
-    return when (severity) {
-        AlertSeverity.INFO -> LeafOnColors.TextSecondary
-        AlertSeverity.WARNING -> Color(0xFF8A6D00)
-        AlertSeverity.CRITICAL -> LeafOnColors.Error
+        if (!readAt.isNullOrBlank()) {
+            Text(
+                text = "Lido em $readAt",
+                fontSize = 13.sp,
+                color = LeafOnColors.TextSecondary,
+            )
+        }
     }
 }

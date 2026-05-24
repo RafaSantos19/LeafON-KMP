@@ -1,16 +1,18 @@
 package kmp.edu.leafon_kmp.presentation.home
 
-import kmp.edu.leafon_kmp.presentation.components.layout.SidebarDestination
+import kmp.edu.leafon_kmp.core.model.SmartPot
+import kmp.edu.leafon_kmp.core.model.TelemetryReading
 import kmp.edu.leafon_kmp.presentation.home.components.ChartRange
-import kmp.edu.leafon_kmp.presentation.home.model.DashboardUiState
-import kmp.edu.leafon_kmp.presentation.home.model.dashboardPreviewState
 
 data class HomeState(
-    val dashboard: DashboardUiState = DashboardUiState(),
-    val selectedDestination: SidebarDestination = SidebarDestination.HOME,
+    val smartPots: List<SmartPot> = emptyList(),
+    val selectedSmartPotId: String? = null,
+    val latestTelemetry: TelemetryReading? = null,
+    val telemetryHistory: List<TelemetryReading> = emptyList(),
+    val unreadAlertsCount: Int = 0,
+    val isLoading: Boolean = false,
+    val isTelemetryLoading: Boolean = false,
+    val errorMessage: String? = null,
+    val telemetryErrorMessage: String? = null,
     val selectedRange: ChartRange = ChartRange.H24,
-)
-
-fun homePreviewState() = HomeState(
-    dashboard = dashboardPreviewState(),
 )

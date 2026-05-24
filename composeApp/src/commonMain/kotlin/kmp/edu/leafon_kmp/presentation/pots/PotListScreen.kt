@@ -18,6 +18,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import kmp.edu.leafon_kmp.core.time.ReadableTimestampFormatter
 import kmp.edu.leafon_kmp.presentation.components.global.LeafOnColors
 import kmp.edu.leafon_kmp.presentation.components.layout.AppSidebar
 import kmp.edu.leafon_kmp.presentation.components.layout.AppTopBar
@@ -229,8 +230,10 @@ private fun CompactPotListLayout(
 
 private fun potListTopBarState(state: PotListState): AppTopBarState {
     val totalPots = state.pots.size
-    val lastUpdate = state.pots.firstOrNull()?.updatedAt
-        ?: state.pots.firstOrNull()?.createdAt
+    val lastUpdate = ReadableTimestampFormatter.formatOrFallback(
+        state.pots.firstOrNull()?.updatedAt
+            ?: state.pots.firstOrNull()?.createdAt
+    )
         ?: "sem atualizacao"
 
     return AppTopBarState(

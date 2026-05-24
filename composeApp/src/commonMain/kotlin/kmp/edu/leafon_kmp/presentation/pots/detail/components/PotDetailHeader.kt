@@ -10,10 +10,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Spa
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -34,7 +32,6 @@ fun PotDetailHeader(
     plantName: String,
     deviceId: String?,
     humidityMin: Int?,
-    updatedAt: String?,
     modifier: Modifier = Modifier,
 ) {
     Card(
@@ -81,25 +78,6 @@ fun PotDetailHeader(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-
-                Spacer(Modifier.height(12.dp))
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Outlined.Schedule,
-                        contentDescription = null,
-                        tint = LeafOnColors.TextSecondary,
-                        modifier = Modifier.size(15.dp),
-                    )
-                    Spacer(Modifier.width(6.dp))
-                    Text(
-                        text = "Ultima atualizacao: ${updatedAt ?: "Sem sincronizacao recente"}",
-                        fontSize = 13.sp,
-                        color = LeafOnColors.TextSecondary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
 
                 Spacer(Modifier.height(8.dp))
 

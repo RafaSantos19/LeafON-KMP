@@ -32,29 +32,33 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kmp.edu.leafon_kmp.core.model.RoutineType
 import kmp.edu.leafon_kmp.presentation.components.global.LeafOnColors
 import kmp.edu.leafon_kmp.presentation.pots.routines.model.WeekDay
 import kmp.edu.leafon_kmp.presentation.pots.routines.model.shortLabel
 
 @Composable
 fun RoutineFormContent(
+    type: RoutineType,
     name: String,
     time: String,
     selectedDays: Set<WeekDay>,
-    durationSec: Int,
-    enabled: Boolean,
+    durationInput: String,
+    active: Boolean,
+    isLoading: Boolean,
     isSaving: Boolean,
     errorMessage: String?,
+    onTypeChange: (RoutineType) -> Unit,
     onNameChange: (String) -> Unit,
     onTimeChange: (String) -> Unit,
     onToggleDay: (WeekDay) -> Unit,
     onDurationChange: (String) -> Unit,
-    onToggleEnabled: () -> Unit,
+    onToggleActive: () -> Unit,
     onSubmitClick: () -> Unit,
     modifier: Modifier = Modifier,
     onCancelClick: (() -> Unit)? = null,
     title: String = "Nova rotina",
-    subtitle: String = "Defina quando o Smart Pot deve irrigar a planta.",
+    subtitle: String = "Defina quando a rotina deve executar no sistema.",
     submitLabel: String = "Salvar rotina",
 ) {
     Column(
@@ -69,12 +73,18 @@ fun RoutineFormContent(
             subtitle = subtitle,
         )
 
+        RoutineTypeSelector(
+            selectedType = type,
+            enabled = !isSaving && !isLoading,
+            onTypeChange = onTypeChange,
+        )
+
         RoutineTextField(
             label = "Nome da rotina",
             value = name,
             onValueChange = onNameChange,
-            placeholder = "Opcional",
-            enabled = !isSaving,
+            placeholder = "Ex: Irrigacao da manha",
+            enabled = !isSaving && !isLoading,
             keyboardOptions = KeyboardOptions(
                 capitalization = KeyboardCapitalization.Sentences,
             ),
@@ -84,30 +94,30 @@ fun RoutineFormContent(
             label = "Horario",
             value = time,
             onValueChange = onTimeChange,
-            placeholder = "Ex: 08:00",
-            enabled = !isSaving,
+            placeholder = "Ex: 08:30:00",
+            enabled = !isSaving && !isLoading,
             keyboardOptions = KeyboardOptions.Default,
         )
 
         WeekDaySelector(
             selectedDays = selectedDays,
-            enabled = !isSaving,
+            enabled = !isSaving && !isLoading,
             onToggleDay = onToggleDay,
         )
 
         RoutineTextField(
             label = "Duracao em segundos",
-            value = durationSec.takeIf { it > 0 }?.toString().orEmpty(),
+            value = durationInput,
             onValueChange = onDurationChange,
-            placeholder = "Ex: 20",
-            enabled = !isSaving,
+            placeholder = "Ex: 120",
+            enabled = !isSaving && !isLoading,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         )
 
-        EnabledToggle(
-            enabled = enabled,
-            controlsEnabled = !isSaving,
-            onToggleEnabled = onToggleEnabled,
+        ActiveToggle(
+            active = active,
+            controlsEnabled = !isSaving && !isLoading,
+            onToggleActive = onToggleActive,
         )
 
         if (errorMessage != null) {
@@ -125,6 +135,55 @@ fun RoutineFormContent(
             onSubmitClick = onSubmitClick,
             onCancelClick = onCancelClick,
         )
+    }
+}
+
+@Composable
+private fun RoutineTypeSelector(
+    selectedType: RoutineType,
+    enabled: Boolean,
+    onTypeChange: (RoutineType) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = "Tipo",
+            fontSize = 13.sp,
+            color = LeafOnColors.TextSecondary,
+        )
+
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            RoutineType.entries
+                .filterNot { it == RoutineType.UNKNOWN }
+                .forEach { type ->
+                    val isSelected = type == selectedType
+                    Button(
+                        onClick = { onTypeChange(type) },
+                        enabled = enabled,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (isSelected) {
+                                LeafOnColors.GreenPrimary
+                            } else {
+                                LeafOnColors.BgMain
+                            },
+                            contentColor = if (isSelected) {
+                                LeafOnColors.TextOnDark
+                            } else {
+                                LeafOnColors.TextPrimary
+                            },
+                            disabledContainerColor = LeafOnColors.BgSecondary,
+                            disabledContentColor = LeafOnColors.TextSecondary,
+                        ),
+                    ) {
+                        Text(
+                            text = when (type) {
+                                RoutineType.IRRIGATION -> "Irrigacao"
+                                RoutineType.LIGHTING -> "Iluminacao"
+                                RoutineType.UNKNOWN -> "Desconhecido"
+                            },
+                        )
+                    }
+                }
+        }
     }
 }
 
@@ -251,10 +310,10 @@ private fun WeekDayButton(
 }
 
 @Composable
-private fun EnabledToggle(
-    enabled: Boolean,
+private fun ActiveToggle(
+    active: Boolean,
     controlsEnabled: Boolean,
-    onToggleEnabled: () -> Unit,
+    onToggleActive: () -> Unit,
 ) {
     Row(
         modifier = Modifier
@@ -279,9 +338,9 @@ private fun EnabledToggle(
         }
 
         Switch(
-            checked = enabled,
+            checked = active,
             enabled = controlsEnabled,
-            onCheckedChange = { onToggleEnabled() },
+            onCheckedChange = { onToggleActive() },
         )
     }
 }

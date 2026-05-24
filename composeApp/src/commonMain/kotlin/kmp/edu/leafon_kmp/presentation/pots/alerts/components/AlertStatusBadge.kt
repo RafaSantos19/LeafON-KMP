@@ -17,16 +17,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kmp.edu.leafon_kmp.core.model.AlertStatus
+import kmp.edu.leafon_kmp.core.model.AlertType
 import kmp.edu.leafon_kmp.presentation.components.global.LeafOnColors
-import kmp.edu.leafon_kmp.presentation.pots.alerts.model.AlertSeverity
-import kmp.edu.leafon_kmp.presentation.pots.alerts.model.AlertStatus
 
 @Composable
 fun AlertStatusBadge(
-    severity: AlertSeverity,
+    type: AlertType,
     modifier: Modifier = Modifier,
 ) {
-    val badge = severityBadgeData(severity)
+    val badge = typeBadgeData(type)
     AlertBadge(
         label = badge.label,
         color = badge.color,
@@ -79,13 +79,13 @@ private data class BadgeData(
     val color: Color,
 )
 
-private fun severityBadgeData(severity: AlertSeverity) = when (severity) {
-    AlertSeverity.INFO -> BadgeData("Info", LeafOnColors.TextSecondary)
-    AlertSeverity.WARNING -> BadgeData("Atencao", Color(0xFF8A6D00))
-    AlertSeverity.CRITICAL -> BadgeData("Critico", LeafOnColors.Error)
+private fun typeBadgeData(type: AlertType) = when (type) {
+    AlertType.LOW_SOIL_HUMIDITY -> BadgeData("Umidade baixa", Color(0xFF8A6D00))
+    AlertType.UNKNOWN -> BadgeData("Alerta", LeafOnColors.TextSecondary)
 }
 
 private fun statusBadgeData(status: AlertStatus) = when (status) {
-    AlertStatus.ACTIVE -> BadgeData("Ativo", LeafOnColors.Error)
-    AlertStatus.RESOLVED -> BadgeData("Resolvido", LeafOnColors.Success)
+    AlertStatus.PENDING -> BadgeData("Pendente", LeafOnColors.Error)
+    AlertStatus.READ -> BadgeData("Lido", LeafOnColors.Success)
+    AlertStatus.UNKNOWN -> BadgeData("Desconhecido", LeafOnColors.TextSecondary)
 }

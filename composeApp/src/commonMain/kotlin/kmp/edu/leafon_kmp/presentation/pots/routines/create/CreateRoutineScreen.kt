@@ -9,13 +9,20 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import kmp.edu.leafon_kmp.data.RepositorioRemoto
-import kmp.edu.leafon_kmp.data.RepositorioRemotoEmMemoria
+import kmp.edu.leafon_kmp.data.repository.RoutineRepository
 import kmp.edu.leafon_kmp.presentation.components.global.LeafOnColors
 import kmp.edu.leafon_kmp.presentation.components.layout.AppSidebar
 import kmp.edu.leafon_kmp.presentation.components.layout.AppTopBar
@@ -26,9 +33,10 @@ import kmp.edu.leafon_kmp.presentation.pots.routines.components.RoutineFormConte
 @Composable
 fun CreateRoutineScreen(
     potId: String,
-    repositorio: RepositorioRemoto = RepositorioRemotoEmMemoria(),
+    routineId: String? = null,
+    routineRepository: RoutineRepository,
     onBackClick: () -> Unit,
-    onRoutineCreated: () -> Unit,
+    onRoutineSaved: () -> Unit,
     onHomeClick: () -> Unit = {},
     onPotsClick: () -> Unit = onBackClick,
     onAlertsClick: () -> Unit = {},
@@ -36,12 +44,17 @@ fun CreateRoutineScreen(
     onNotificationsClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    val viewModel = remember(potId, repositorio, onRoutineCreated) {
+    val viewModel = remember(potId, routineId, routineRepository, onRoutineSaved) {
         CreateRoutineViewModel(
             potId = potId,
-            repositorio = repositorio,
-            onCreated = onRoutineCreated,
+            routineId = routineId,
+            routineRepository = routineRepository,
+            onSaved = onRoutineSaved,
         )
+    }
+
+    DisposableEffect(viewModel) {
+        onDispose { viewModel.onCleared() }
     }
 
     BoxWithConstraints(
@@ -106,7 +119,7 @@ private fun ExpandedCreateRoutineLayout(
 
         Column(modifier = Modifier.fillMaxSize()) {
             AppTopBar(
-                state = createRoutineTopBarState(),
+                state = createRoutineTopBarState(state.isEditMode),
                 onNotificationsClick = onNotificationsClick,
                 onProfileClick = onProfileClick,
             )
@@ -134,7 +147,7 @@ private fun CompactCreateRoutineLayout(
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         AppTopBar(
-            state = createRoutineTopBarState(),
+            state = createRoutineTopBarState(state.isEditMode),
             onNotificationsClick = onNotificationsClick,
             onProfileClick = onProfileClick,
             compact = true,
@@ -165,46 +178,127 @@ private fun CreateRoutineContent(
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = 24.dp, vertical = 28.dp),
-        contentAlignment = Alignment.TopCenter,
-    ) {
-        RoutineFormContent(
-            name = state.name,
-            time = state.time,
-            selectedDays = state.selectedDays,
-            durationSec = state.durationSec,
-            enabled = state.enabled,
-            isSaving = state.isSaving,
-            errorMessage = state.errorMessage,
-            onNameChange = { value ->
-                onAction(CreateRoutineAction.OnNameChange(value))
+    when {
+        state.isLoading -> Box(
+            modifier = modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
+        ) {
+            CircularProgressIndicator(color = LeafOnColors.GreenPrimary)
+        }
+
+        state.errorMessage != null && state.isEditMode && state.name.isBlank() -> RoutineFormErrorState(
+            message = state.errorMessage,
+            onRetryClick = {
+                onAction(CreateRoutineAction.OnRetryLoad)
             },
-            onTimeChange = { value ->
-                onAction(CreateRoutineAction.OnTimeChange(value))
-            },
-            onToggleDay = { day ->
-                onAction(CreateRoutineAction.OnToggleDay(day))
-            },
-            onDurationChange = { value ->
-                onAction(CreateRoutineAction.OnDurationChange(value))
-            },
-            onToggleEnabled = {
-                onAction(CreateRoutineAction.OnToggleEnabled)
-            },
-            onSubmitClick = {
-                onAction(CreateRoutineAction.OnSaveClick)
-            },
-            onCancelClick = onBackClick,
+            onBackClick = onBackClick,
+            modifier = modifier,
         )
+
+        else -> Box(
+            modifier = modifier
+                .fillMaxSize()
+                .padding(horizontal = 24.dp, vertical = 28.dp),
+            contentAlignment = Alignment.TopCenter,
+        ) {
+            RoutineFormContent(
+                type = state.type,
+                name = state.name,
+                time = state.time,
+                selectedDays = state.selectedDays,
+                durationInput = state.durationInput,
+                active = state.active,
+                isLoading = state.isLoading,
+                isSaving = state.isSaving,
+                errorMessage = state.errorMessage,
+                onTypeChange = { value ->
+                    onAction(CreateRoutineAction.OnTypeChange(value))
+                },
+                onNameChange = { value ->
+                    onAction(CreateRoutineAction.OnNameChange(value))
+                },
+                onTimeChange = { value ->
+                    onAction(CreateRoutineAction.OnTimeChange(value))
+                },
+                onToggleDay = { day ->
+                    onAction(CreateRoutineAction.OnToggleDay(day))
+                },
+                onDurationChange = { value ->
+                    onAction(CreateRoutineAction.OnDurationChange(value))
+                },
+                onToggleActive = {
+                    onAction(CreateRoutineAction.OnToggleEnabled)
+                },
+                onSubmitClick = {
+                    onAction(CreateRoutineAction.OnSaveClick)
+                },
+                onCancelClick = onBackClick,
+                title = if (state.isEditMode) "Editar rotina" else "Nova rotina",
+                subtitle = if (state.isEditMode) {
+                    "Atualize configuracoes logicas da rotina sem acionar hardware fisico."
+                } else {
+                    "Crie uma rotina logica associada a este Smart Pot."
+                },
+                submitLabel = if (state.isEditMode) "Salvar alteracoes" else "Salvar rotina",
+            )
+        }
     }
 }
 
-private fun createRoutineTopBarState() = AppTopBarState(
-    title = "Nova rotina",
-    subject = "Automacao de irrigacao",
+@Composable
+private fun RoutineFormErrorState(
+    message: String,
+    onRetryClick: () -> Unit,
+    onBackClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 24.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = "Nao foi possivel carregar a rotina.",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = LeafOnColors.TextPrimary,
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                text = message,
+                color = LeafOnColors.TextSecondary,
+                textAlign = TextAlign.Center,
+            )
+            Row(modifier = Modifier.padding(top = 16.dp)) {
+                Button(
+                    onClick = onBackClick,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = LeafOnColors.TextSecondary,
+                        contentColor = LeafOnColors.TextOnDark,
+                    ),
+                ) {
+                    Text("Voltar")
+                }
+                Button(
+                    onClick = onRetryClick,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = LeafOnColors.GreenPrimary,
+                        contentColor = LeafOnColors.TextOnDark,
+                    ),
+                    modifier = Modifier.padding(start = 12.dp),
+                ) {
+                    Text("Tentar novamente")
+                }
+            }
+        }
+    }
+}
+
+private fun createRoutineTopBarState(isEditMode: Boolean) = AppTopBarState(
+    title = if (isEditMode) "Editar rotina" else "Nova rotina",
+    subject = "Automacao logica",
     subjectOnline = true,
-    lastUpdateLabel = "Defina horario, dias e duracao",
+    lastUpdateLabel = "Defina horario, dias, duracao e status",
 )

@@ -30,10 +30,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kmp.edu.leafon_kmp.core.format.format
 import kmp.edu.leafon_kmp.core.model.TelemetryReading
 import kmp.edu.leafon_kmp.presentation.components.global.LeafOnColors
-import kotlin.math.pow
-import kotlin.math.round
 
 @Composable
 fun PotTelemetrySection(
@@ -276,10 +275,4 @@ private fun TelemetryInfoCard(
             )
         }
     }
-}
-
-private fun Double.format(decimals: Int): String {
-    val factor = 10.0.pow(decimals)
-    val rounded = round(this * factor) / factor
-    return rounded.toString()
 }

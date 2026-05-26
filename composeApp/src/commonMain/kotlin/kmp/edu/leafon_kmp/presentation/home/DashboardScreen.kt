@@ -30,6 +30,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kmp.edu.leafon_kmp.core.format.format
 import kmp.edu.leafon_kmp.core.model.SmartPot
 import kmp.edu.leafon_kmp.core.model.TelemetryReading
 import kmp.edu.leafon_kmp.core.time.ReadableTimestampFormatter
@@ -532,12 +533,12 @@ private fun HomeState.toMetrics(): List<MetricUi> {
         ),
         MetricUi(
             label = "Temperatura atual",
-            value = latestTelemetry?.temperature?.let { "%.1f".format(it) } ?: "--",
+            value = latestTelemetry?.temperature?.format(1) ?: "--",
             unit = if (latestTelemetry != null) "°C" else "",
         ),
         MetricUi(
             label = "Luminosidade atual",
-            value = latestTelemetry?.luminosity?.let { "%.1f".format(it) } ?: "--",
+            value = latestTelemetry?.luminosity?.format(1) ?: "--",
             unit = if (latestTelemetry != null) "lux" else "",
         ),
     )

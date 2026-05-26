@@ -1,3 +1,8 @@
 package kmp.edu.leafon_kmp.core.network
 
-actual fun defaultApiBaseUrl(): String = "http://localhost:8080"
+import kotlinx.browser.window
+
+actual fun defaultApiBaseUrl(): String {
+    val location = window.location
+    return "${location.protocol}//${location.hostname}:8080"
+}

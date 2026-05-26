@@ -4,6 +4,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.plugins.ResponseException
+import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
@@ -13,9 +14,11 @@ import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
+import io.ktor.http.HttpHeaders
 import io.ktor.http.isSuccess
 import kmp.edu.leafon_kmp.core.network.ApiConfig
 import kmp.edu.leafon_kmp.core.network.ApiException
+import kmp.edu.leafon_kmp.core.network.AuthTokenProvider
 import kmp.edu.leafon_kmp.data.remote.dto.AlertResponseDto
 import kmp.edu.leafon_kmp.data.remote.dto.CreateRoutineRequestDto
 import kmp.edu.leafon_kmp.data.remote.dto.CreateSmartPotRequestDto
@@ -36,6 +39,7 @@ import kotlinx.serialization.json.Json
 class LeafOnApiClient(
     private val httpClient: HttpClient,
     private val apiConfig: ApiConfig,
+    private val tokenProvider: AuthTokenProvider,
 ) {
     private val json = Json {
         ignoreUnknownKeys = true
@@ -49,7 +53,7 @@ class LeafOnApiClient(
 
         val response = try {
             withTimeout(15_000) {
-                httpClient.get(requestUrl)
+                get("/users/me")
             }.also {
                 println("LeafOnApiClient.getMe -> response headers received status=${it.status}")
             }
@@ -106,13 +110,13 @@ class LeafOnApiClient(
     }
 
     suspend fun createUser(request: CreateUserRequestDto): UserResponseDto {
-        return httpClient.post(url("/users")) {
+        return post("/users") {
             setBody(request)
         }.body()
     }
 
     suspend fun updateMe(request: UpdateUserRequestDto): UserResponseDto {
-        return httpClient.put(url("/users/me")) {
+        return put("/users/me") {
             setBody(request)
         }.body()
     }
@@ -121,7 +125,7 @@ class LeafOnApiClient(
         return requestJson(
             method = "GET",
             path = "/smart-pots",
-            execute = { httpClient.get(url("/smart-pots")) },
+            execute = { get("/smart-pots") },
             decode = { rawBody -> json.decodeFromString<List<SmartPotResponseDto>>(rawBody) },
         )
     }
@@ -130,7 +134,7 @@ class LeafOnApiClient(
         return requestJson(
             method = "GET",
             path = "/smart-pots/$id",
-            execute = { httpClient.get(url("/smart-pots/$id")) },
+            execute = { get("/smart-pots/$id") },
             decode = { rawBody -> json.decodeFromString<SmartPotResponseDto>(rawBody) },
         )
     }
@@ -140,7 +144,7 @@ class LeafOnApiClient(
             method = "POST",
             path = "/smart-pots",
             execute = {
-                httpClient.post(url("/smart-pots")) {
+                post("/smart-pots") {
                     setBody(request)
                 }
             },
@@ -156,7 +160,7 @@ class LeafOnApiClient(
             method = "PUT",
             path = "/smart-pots/$id",
             execute = {
-                httpClient.put(url("/smart-pots/$id")) {
+                put("/smart-pots/$id") {
                     setBody(request)
                 }
             },
@@ -168,7 +172,7 @@ class LeafOnApiClient(
         requestUnit(
             method = "DELETE",
             path = "/smart-pots/$id",
-            execute = { httpClient.delete(url("/smart-pots/$id")) },
+            execute = { delete("/smart-pots/$id") },
         )
     }
 
@@ -177,7 +181,7 @@ class LeafOnApiClient(
             method = "POST",
             path = "/telemetry",
             execute = {
-                httpClient.post(url("/telemetry")) {
+                post("/telemetry") {
                     setBody(request)
                 }
             },
@@ -190,7 +194,7 @@ class LeafOnApiClient(
             method = "GET",
             path = "/telemetry?smartPotId=$smartPotId",
             execute = {
-                httpClient.get(url("/telemetry")) {
+                get("/telemetry") {
                     parameter("smartPotId", smartPotId)
                 }
             },
@@ -203,7 +207,7 @@ class LeafOnApiClient(
             method = "GET",
             path = "/telemetry/latest?smartPotId=$smartPotId",
             execute = {
-                httpClient.get(url("/telemetry/latest")) {
+                get("/telemetry/latest") {
                     parameter("smartPotId", smartPotId)
                 }
             },
@@ -215,7 +219,7 @@ class LeafOnApiClient(
         return requestJson(
             method = "GET",
             path = "/alerts",
-            execute = { httpClient.get(url("/alerts")) },
+            execute = { get("/alerts") },
             decode = { rawBody -> json.decodeFromString<List<AlertResponseDto>>(rawBody) },
         )
     }
@@ -224,7 +228,7 @@ class LeafOnApiClient(
         return requestJson(
             method = "GET",
             path = "/alerts/unread",
-            execute = { httpClient.get(url("/alerts/unread")) },
+            execute = { get("/alerts/unread") },
             decode = { rawBody -> json.decodeFromString<List<AlertResponseDto>>(rawBody) },
         )
     }
@@ -233,7 +237,7 @@ class LeafOnApiClient(
         return requestJson(
             method = "PATCH",
             path = "/alerts/$id/read",
-            execute = { httpClient.patch(url("/alerts/$id/read")) },
+            execute = { patch("/alerts/$id/read") },
             decode = { rawBody -> json.decodeFromString<AlertResponseDto>(rawBody) },
         )
     }
@@ -242,7 +246,7 @@ class LeafOnApiClient(
         return requestJson(
             method = "GET",
             path = "/routines",
-            execute = { httpClient.get(url("/routines")) },
+            execute = { get("/routines") },
             decode = { rawBody -> json.decodeFromString<List<RoutineResponseDto>>(rawBody) },
         )
     }
@@ -251,7 +255,7 @@ class LeafOnApiClient(
         return requestJson(
             method = "GET",
             path = "/routines/$id",
-            execute = { httpClient.get(url("/routines/$id")) },
+            execute = { get("/routines/$id") },
             decode = { rawBody -> json.decodeFromString<RoutineResponseDto>(rawBody) },
         )
     }
@@ -261,7 +265,7 @@ class LeafOnApiClient(
             method = "POST",
             path = "/routines",
             execute = {
-                httpClient.post(url("/routines")) {
+                post("/routines") {
                     setBody(request)
                 }
             },
@@ -277,7 +281,7 @@ class LeafOnApiClient(
             method = "PUT",
             path = "/routines/$id",
             execute = {
-                httpClient.put(url("/routines/$id")) {
+                put("/routines/$id") {
                     setBody(request)
                 }
             },
@@ -289,7 +293,7 @@ class LeafOnApiClient(
         return requestJson(
             method = "PATCH",
             path = "/routines/$id/activate",
-            execute = { httpClient.patch(url("/routines/$id/activate")) },
+            execute = { patch("/routines/$id/activate") },
             decode = { rawBody -> json.decodeFromString<RoutineResponseDto>(rawBody) },
         )
     }
@@ -298,7 +302,7 @@ class LeafOnApiClient(
         return requestJson(
             method = "PATCH",
             path = "/routines/$id/deactivate",
-            execute = { httpClient.patch(url("/routines/$id/deactivate")) },
+            execute = { patch("/routines/$id/deactivate") },
             decode = { rawBody -> json.decodeFromString<RoutineResponseDto>(rawBody) },
         )
     }
@@ -307,7 +311,7 @@ class LeafOnApiClient(
         return requestJson(
             method = "PATCH",
             path = "/routines/$id/simulate-execution",
-            execute = { httpClient.patch(url("/routines/$id/simulate-execution")) },
+            execute = { patch("/routines/$id/simulate-execution") },
             decode = { rawBody -> json.decodeFromString<RoutineResponseDto>(rawBody) },
         )
     }
@@ -316,12 +320,73 @@ class LeafOnApiClient(
         requestUnit(
             method = "DELETE",
             path = "/routines/$id",
-            execute = { httpClient.delete(url("/routines/$id")) },
+            execute = { delete("/routines/$id") },
         )
+    }
+
+    private suspend fun get(
+        path: String,
+        builder: HttpRequestBuilder.() -> Unit = {},
+    ): HttpResponse {
+        return httpClient.get(url(path)) {
+            applyBearerTokenIfAvailable()
+            builder()
+        }
+    }
+
+    private suspend fun post(
+        path: String,
+        builder: HttpRequestBuilder.() -> Unit = {},
+    ): HttpResponse {
+        return httpClient.post(url(path)) {
+            applyBearerTokenIfAvailable()
+            builder()
+        }
+    }
+
+    private suspend fun put(
+        path: String,
+        builder: HttpRequestBuilder.() -> Unit = {},
+    ): HttpResponse {
+        return httpClient.put(url(path)) {
+            applyBearerTokenIfAvailable()
+            builder()
+        }
+    }
+
+    private suspend fun patch(
+        path: String,
+        builder: HttpRequestBuilder.() -> Unit = {},
+    ): HttpResponse {
+        return httpClient.patch(url(path)) {
+            applyBearerTokenIfAvailable()
+            builder()
+        }
+    }
+
+    private suspend fun delete(
+        path: String,
+        builder: HttpRequestBuilder.() -> Unit = {},
+    ): HttpResponse {
+        return httpClient.delete(url(path)) {
+            applyBearerTokenIfAvailable()
+            builder()
+        }
     }
 
     private fun url(path: String): String {
         return "${apiConfig.normalizedBaseUrl}$path"
+    }
+
+    private suspend fun HttpRequestBuilder.applyBearerTokenIfAvailable() {
+        val token = tokenProvider.getAccessToken()?.takeIf { it.isNotBlank() }
+        if (token != null) {
+            headers.remove(HttpHeaders.Authorization)
+            headers.append(HttpHeaders.Authorization, "Bearer $token")
+        }
+        println(
+            "LeafOnApiClient.auth -> tokenPresent=${token != null} url=${url.buildString()}"
+        )
     }
 
     private suspend fun <T> requestJson(

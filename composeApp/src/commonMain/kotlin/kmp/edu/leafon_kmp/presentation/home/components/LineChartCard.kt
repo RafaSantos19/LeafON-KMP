@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kmp.edu.leafon_kmp.core.format.format
 import kmp.edu.leafon_kmp.presentation.components.global.LeafOnColors
 
 enum class ChartRange(
@@ -223,6 +224,6 @@ private fun formatChartValue(value: Float): String {
     return if (value % 1f == 0f) {
         value.toInt().toString()
     } else {
-        "%.1f".format(value)
+        value.format(1)
     }
 }

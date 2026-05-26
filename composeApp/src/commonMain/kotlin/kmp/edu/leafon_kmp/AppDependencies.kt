@@ -50,6 +50,7 @@ object AppDependencies {
         LeafOnApiClient(
             httpClient = httpClient,
             apiConfig = apiConfig,
+            tokenProvider = tokenProvider,
         )
     }
     val smartPotRepositoryMemory: SmartPotRepository by lazy { SmartPotRepositoryMemory() }

@@ -38,6 +38,11 @@ Funcionalidades implementadas:
 - CRUD real de rotinas
 - Dashboard Home com dados reais e graficos simples em `Canvas`
 
+Ao carregar a Home, o app consulta vasos e alertas nao lidos e, para o vaso
+selecionado, busca a leitura mais recente e no maximo 30 pontos do historico.
+Carregamentos anteriores sao cancelados em refresh ou troca de vaso para evitar
+requisicoes concorrentes e uso desnecessario de memoria no mobile.
+
 ## Stack
 
 - Kotlin `2.3.0`
@@ -169,9 +174,17 @@ As configuracoes atuais ficam em `composeApp/src/commonMain/kotlin/kmp/edu/leafo
 ### 3. Base URL da API
 
 A URL base default varia por target:
-- Android Emulator: `http://10.0.2.2:8080`
+- Android (dispositivo fisico na rede local): `http://192.168.1.2:8080`
 - Desktop JVM: `http://127.0.0.1:8080`
 - JS/Wasm: `http://localhost:8080`
+
+Para o Android acessar a API, o dispositivo e a maquina que executa o backend
+devem estar na mesma rede. O backend tambem deve aceitar conexoes externas na
+porta `8080`, em vez de escutar apenas em `localhost`.
+
+No emulador Android, caso seja necessario acessar um backend executado na
+maquina host, troque a URL em runtime para `http://10.0.2.2:8080` usando
+`AppDependencies.atualizarBaseUrl(...)`.
 
 Arquivos:
 - `composeApp/src/commonMain/kotlin/kmp/edu/leafon_kmp/core/network/ApiConfig.kt`

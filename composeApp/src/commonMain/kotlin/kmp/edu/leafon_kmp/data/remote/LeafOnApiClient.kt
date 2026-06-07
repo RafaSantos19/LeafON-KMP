@@ -189,17 +189,31 @@ class LeafOnApiClient(
         )
     }
 
-    suspend fun getTelemetry(smartPotId: String): List<TelemetryResponseDto> {
+    suspend fun getTelemetry(
+        smartPotId: String,
+        limit: Int? = null,
+    ): List<TelemetryResponseDto> {
+        val normalizedLimit = limit?.coerceAtLeast(1)
+        val requestPath = buildString {
+            append("/telemetry?smartPotId=$smartPotId")
+            if (normalizedLimit != null) {
+                append("&limit=$normalizedLimit")
+            }
+        }
+
         return requestJson(
             method = "GET",
-            path = "/telemetry?smartPotId=$smartPotId",
+            path = requestPath,
             execute = {
                 get("/telemetry") {
                     parameter("smartPotId", smartPotId)
+                    normalizedLimit?.let { parameter("limit", it) }
                 }
             },
             decode = { rawBody -> json.decodeFromString<List<TelemetryResponseDto>>(rawBody) },
-        )
+        ).let { telemetry ->
+            normalizedLimit?.let(telemetry::take) ?: telemetry
+        }
     }
 
     suspend fun getLatestTelemetry(smartPotId: String): TelemetryResponseDto? {

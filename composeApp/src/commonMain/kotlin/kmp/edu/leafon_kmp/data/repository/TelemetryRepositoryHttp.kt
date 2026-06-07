@@ -27,8 +27,14 @@ class TelemetryRepositoryHttp(
         ).toDomain()
     }
 
-    override suspend fun getTelemetry(smartPotId: String): List<TelemetryReading> {
-        return apiClient.getTelemetry(smartPotId).map { it.toDomain() }
+    override suspend fun getTelemetry(
+        smartPotId: String,
+        limit: Int?,
+    ): List<TelemetryReading> {
+        return apiClient.getTelemetry(
+            smartPotId = smartPotId,
+            limit = limit,
+        ).map { it.toDomain() }
     }
 
     override suspend fun getLatestTelemetry(smartPotId: String): TelemetryReading? {

@@ -184,6 +184,7 @@ private fun DashboardContent(
                     HomeHeader(
                         state = state,
                         onRefreshClick = { onAction(HomeAction.OnRefreshClick) },
+                        isCompact = isCompact,
                     )
                     SmartPotSelector(
                         smartPots = state.smartPots,
@@ -197,6 +198,7 @@ private fun DashboardContent(
                     TelemetrySection(
                         state = state,
                         onRangeSelected = { onAction(HomeAction.OnRangeSelected(it)) },
+                        isCompact = isCompact,
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                 }
@@ -231,8 +233,38 @@ private fun dashboardTopBarState(state: HomeState): AppTopBarState {
 private fun HomeHeader(
     state: HomeState,
     onRefreshClick: () -> Unit,
+    isCompact: Boolean,
 ) {
     val selectedPot = state.smartPots.firstOrNull { it.id == state.selectedSmartPotId }
+    val description = selectedPot?.let {
+        "Acompanhe a telemetria, o historico e os alertas de ${it.plantName}."
+    } ?: "Selecione um vaso para visualizar os dados reais do dashboard."
+
+    if (isCompact) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = "Dashboard do Smart Pot",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = LeafOnColors.TextPrimary,
+            )
+            Text(
+                text = description,
+                fontSize = 14.sp,
+                color = LeafOnColors.TextSecondary,
+            )
+            OutlinedButton(
+                onClick = onRefreshClick,
+                modifier = Modifier.align(Alignment.End),
+            ) {
+                Text("Atualizar")
+            }
+        }
+        return
+    }
 
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -247,9 +279,7 @@ private fun HomeHeader(
                 color = LeafOnColors.TextPrimary,
             )
             Text(
-                text = selectedPot?.let {
-                    "Acompanhe a telemetria, o historico e os alertas de ${it.plantName}."
-                } ?: "Selecione um vaso para visualizar os dados reais do dashboard.",
+                text = description,
                 fontSize = 14.sp,
                 color = LeafOnColors.TextSecondary,
             )
@@ -333,6 +363,7 @@ private fun MetricGrid(
 private fun TelemetrySection(
     state: HomeState,
     onRangeSelected: (ChartRange) -> Unit,
+    isCompact: Boolean,
 ) {
     val chartData = state.selectedChartData()
     val emptyMessage = if (state.selectedSmartPotId == null) {
@@ -342,21 +373,40 @@ private fun TelemetrySection(
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Text(
-                text = "Historico de telemetria",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold,
-                color = LeafOnColors.TextPrimary,
-            )
-            ChartRangeSelector(
-                selectedRange = state.selectedRange,
-                onRangeSelected = onRangeSelected,
-            )
+        if (isCompact) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Text(
+                    text = "Historico de telemetria",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = LeafOnColors.TextPrimary,
+                )
+                ChartRangeSelector(
+                    selectedRange = state.selectedRange,
+                    onRangeSelected = onRangeSelected,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        } else {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    text = "Historico de telemetria",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = LeafOnColors.TextPrimary,
+                )
+                ChartRangeSelector(
+                    selectedRange = state.selectedRange,
+                    onRangeSelected = onRangeSelected,
+                )
+            }
         }
 
         state.telemetryErrorMessage?.let { message ->

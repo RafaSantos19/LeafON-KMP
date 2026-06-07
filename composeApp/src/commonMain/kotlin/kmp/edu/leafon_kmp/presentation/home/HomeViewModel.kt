@@ -10,10 +10,12 @@ import kmp.edu.leafon_kmp.data.repository.TelemetryRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
 
 class HomeViewModel(
     private val smartPotRepository: SmartPotRepository,
@@ -21,6 +23,8 @@ class HomeViewModel(
     private val alertRepository: AlertRepository,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private var dashboardJob: Job? = null
+    private var telemetryJob: Job? = null
 
     var state by mutableStateOf(HomeState(isLoading = true))
         private set
@@ -58,29 +62,37 @@ class HomeViewModel(
     }
 
     private fun loadDashboard() {
-        scope.launch {
+        dashboardJob?.cancel()
+        telemetryJob?.cancel()
+
+        dashboardJob = scope.launch {
             state = state.copy(
                 isLoading = true,
+                isTelemetryLoading = false,
                 errorMessage = null,
                 telemetryErrorMessage = null,
             )
 
             try {
-                val smartPotsDeferred = async { smartPotRepository.listSmartPots() }
-                val unreadAlertsDeferred = async { alertRepository.listUnreadAlerts() }
+                val selectedSmartPotId = supervisorScope {
+                    val smartPotsDeferred = async { smartPotRepository.listSmartPots() }
+                    val unreadAlertsDeferred = async { alertRepository.listUnreadAlerts() }
 
-                val smartPots = smartPotsDeferred.await()
-                val selectedSmartPotId = resolveSelectedSmartPotId(smartPots)
+                    val smartPots = smartPotsDeferred.await()
+                    val resolvedSelectedSmartPotId = resolveSelectedSmartPotId(smartPots)
 
-                state = state.copy(
-                    smartPots = smartPots,
-                    selectedSmartPotId = selectedSmartPotId,
-                    unreadAlertsCount = unreadAlertsDeferred.await().size,
-                    latestTelemetry = null,
-                    telemetryHistory = emptyList(),
-                    isLoading = false,
-                    errorMessage = null,
-                )
+                    state = state.copy(
+                        smartPots = smartPots,
+                        selectedSmartPotId = resolvedSelectedSmartPotId,
+                        unreadAlertsCount = unreadAlertsDeferred.await().size,
+                        latestTelemetry = null,
+                        telemetryHistory = emptyList(),
+                        isLoading = false,
+                        errorMessage = null,
+                    )
+
+                    resolvedSelectedSmartPotId
+                }
 
                 if (selectedSmartPotId != null) {
                     loadTelemetryForSelectedPot(selectedSmartPotId)
@@ -97,26 +109,33 @@ class HomeViewModel(
     }
 
     private fun loadTelemetryForSelectedPot(smartPotId: String) {
-        scope.launch {
+        telemetryJob?.cancel()
+
+        telemetryJob = scope.launch {
             state = state.copy(
                 isTelemetryLoading = true,
                 telemetryErrorMessage = null,
             )
 
             try {
-                val latestTelemetryDeferred = async {
-                    telemetryRepository.getLatestTelemetry(smartPotId)
-                }
-                val telemetryHistoryDeferred = async {
-                    telemetryRepository.getTelemetry(smartPotId)
-                }
+                supervisorScope {
+                    val latestTelemetryDeferred = async {
+                        telemetryRepository.getLatestTelemetry(smartPotId)
+                    }
+                    val telemetryHistoryDeferred = async {
+                        telemetryRepository.getTelemetry(
+                            smartPotId = smartPotId,
+                            limit = MAX_DASHBOARD_TELEMETRY_POINTS,
+                        )
+                    }
 
-                state = state.copy(
-                    latestTelemetry = latestTelemetryDeferred.await(),
-                    telemetryHistory = telemetryHistoryDeferred.await(),
-                    isTelemetryLoading = false,
-                    telemetryErrorMessage = null,
-                )
+                    state = state.copy(
+                        latestTelemetry = latestTelemetryDeferred.await(),
+                        telemetryHistory = telemetryHistoryDeferred.await(),
+                        isTelemetryLoading = false,
+                        telemetryErrorMessage = null,
+                    )
+                }
             } catch (throwable: CancellationException) {
                 throw throwable
             } catch (throwable: Throwable) {
@@ -142,5 +161,9 @@ class HomeViewModel(
 
             else -> smartPots.first().id
         }
+    }
+
+    private companion object {
+        const val MAX_DASHBOARD_TELEMETRY_POINTS = 30
     }
 }

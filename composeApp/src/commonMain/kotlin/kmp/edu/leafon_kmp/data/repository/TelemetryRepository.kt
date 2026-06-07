@@ -11,7 +11,10 @@ interface TelemetryRepository {
         readAt: String,
     ): TelemetryReading
 
-    suspend fun getTelemetry(smartPotId: String): List<TelemetryReading>
+    suspend fun getTelemetry(
+        smartPotId: String,
+        limit: Int? = null,
+    ): List<TelemetryReading>
 
     suspend fun getLatestTelemetry(smartPotId: String): TelemetryReading?
 }

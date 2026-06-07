@@ -37,8 +37,15 @@ class TelemetryRepositoryMemory : TelemetryRepository {
         return created
     }
 
-    override suspend fun getTelemetry(smartPotId: String): List<TelemetryReading> {
-        return readingsByPotId[smartPotId]?.toList().orEmpty()
+    override suspend fun getTelemetry(
+        smartPotId: String,
+        limit: Int?,
+    ): List<TelemetryReading> {
+        val readings = readingsByPotId[smartPotId].orEmpty()
+        return limit
+            ?.coerceAtLeast(0)
+            ?.let(readings::take)
+            ?: readings.toList()
     }
 
     override suspend fun getLatestTelemetry(smartPotId: String): TelemetryReading? {

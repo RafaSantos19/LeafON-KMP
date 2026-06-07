@@ -6,10 +6,10 @@ import kotlinx.serialization.Serializable
 data class TelemetryResponseDto(
     val id: String? = null,
     val smartPotId: String? = null,
-    val soilHumidity: Int,
-    val temperature: Double,
-    val luminosity: Double,
-    val readAt: String,
+    val soilHumidity: Int? = null,
+    val temperature: Double? = null,
+    val luminosity: Double? = null,
+    val readAt: String? = null,
     val createdAt: String? = null,
 )
 

@@ -8,11 +8,19 @@ import kmp.edu.leafon_kmp.data.remote.dto.TelemetryResponseDto
 fun TelemetryResponseDto.toDomain(): TelemetryReading {
     val resolvedId = id.orEmpty().trim()
     val resolvedSmartPotId = smartPotId.orEmpty().trim()
+    val resolvedReadAt = readAt.orEmpty().trim()
 
-    if (resolvedId.isBlank() || resolvedSmartPotId.isBlank()) {
+    if (
+        resolvedId.isBlank() ||
+        resolvedSmartPotId.isBlank() ||
+        soilHumidity == null ||
+        temperature == null ||
+        luminosity == null ||
+        resolvedReadAt.isBlank()
+    ) {
         throw ApiException(
             statusCode = -1,
-            message = "Resposta da API sem identificadores validos para telemetria.",
+            message = "Resposta da API com dados incompletos de telemetria.",
         )
     }
 
@@ -22,7 +30,7 @@ fun TelemetryResponseDto.toDomain(): TelemetryReading {
         soilHumidity = soilHumidity,
         temperature = temperature,
         luminosity = luminosity,
-        readAt = readAt,
+        readAt = resolvedReadAt,
         createdAt = createdAt?.trim()?.takeIf { it.isNotBlank() },
     )
 }

@@ -5,10 +5,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -68,88 +70,145 @@ fun RoutineCard(
             color = if (routine.active) LeafOnColors.GreenPrimary.copy(alpha = 0.25f) else LeafOnColors.BorderDefault,
         ),
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
-            Row(
-                verticalAlignment = Alignment.Top,
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+            val compact = maxWidth < 420.dp
+            val cardPadding = if (compact) 14.dp else 18.dp
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(cardPadding),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
-                RoutineIcon(type = routine.type, active = routine.active)
-
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                Row(
+                    verticalAlignment = Alignment.Top,
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
                 ) {
-                    Text(
-                        text = routine.name,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = LeafOnColors.TextPrimary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+                    RoutineIcon(type = routine.type, active = routine.active)
 
-                    Row(
-                        modifier = Modifier.horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        RoutineBadge(
-                            label = routine.type.label(),
-                            color = if (routine.type == RoutineType.LIGHTING) Color(0xFF8A6D00) else LeafOnColors.GreenPrimary,
+                        Text(
+                            text = routine.name,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = LeafOnColors.TextPrimary,
+                            maxLines = if (compact) 2 else 1,
+                            overflow = TextOverflow.Ellipsis,
                         )
-                        RoutineBadge(
-                            label = routine.statusLabel(),
-                            color = if (routine.active) LeafOnColors.Success else LeafOnColors.TextSecondary,
+
+                        RoutineBadges(
+                            routine = routine,
+                            compact = compact,
                         )
                     }
                 }
+
+                RoutineScheduleInfo(routine = routine)
+                RoutineExecutionInfo(routine = routine)
+
+                Text(
+                    text = "Simular execucao nao aciona hardware fisico.",
+                    fontSize = 12.sp,
+                    color = LeafOnColors.TextSecondary,
+                )
+
+                RoutineCardActions(
+                    routine = routine,
+                    isBusy = isBusy,
+                    compact = compact,
+                    onEditClick = onEditClick,
+                    onToggleActiveClick = onToggleActiveClick,
+                    onSimulateClick = onSimulateClick,
+                    onDeleteClick = onDeleteClick,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RoutineBadges(
+    routine: Routine,
+    compact: Boolean,
+) {
+    val typeColor = if (routine.type == RoutineType.LIGHTING) Color(0xFF8A6D00) else LeafOnColors.GreenPrimary
+    val statusColor = if (routine.active) LeafOnColors.Success else LeafOnColors.TextSecondary
+
+    if (compact) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            RoutineBadge(label = routine.type.label(), color = typeColor)
+            RoutineBadge(label = routine.statusLabel(), color = statusColor)
+        }
+    } else {
+        Row(
+            modifier = Modifier.horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            RoutineBadge(label = routine.type.label(), color = typeColor)
+            RoutineBadge(label = routine.statusLabel(), color = statusColor)
+        }
+    }
+}
+
+@Composable
+private fun RoutineCardActions(
+    routine: Routine,
+    isBusy: Boolean,
+    compact: Boolean,
+    onEditClick: () -> Unit,
+    onToggleActiveClick: () -> Unit,
+    onSimulateClick: () -> Unit,
+    onDeleteClick: () -> Unit,
+) {
+    if (compact) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            OutlinedButton(
+                onClick = onEditClick,
+                enabled = !isBusy,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(46.dp),
+            ) {
+                Icon(Icons.Outlined.Edit, contentDescription = null)
+                Spacer(Modifier.width(6.dp))
+                Text("Editar")
             }
 
-            RoutineScheduleInfo(routine = routine)
-            RoutineExecutionInfo(routine = routine)
-
-            Text(
-                text = "Simular execucao nao aciona hardware fisico.",
-                fontSize = 12.sp,
-                color = LeafOnColors.TextSecondary,
-            )
+            Button(
+                onClick = onToggleActiveClick,
+                enabled = !isBusy,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(46.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (routine.active) LeafOnColors.TextSecondary else LeafOnColors.GreenPrimary,
+                    contentColor = LeafOnColors.TextOnDark,
+                ),
+            ) {
+                Icon(
+                    imageVector = if (routine.active) Icons.Outlined.ToggleOff else Icons.Outlined.ToggleOn,
+                    contentDescription = null,
+                )
+                Spacer(Modifier.width(6.dp))
+                Text(if (routine.active) "Desativar" else "Ativar")
+            }
 
             Row(
-                modifier = Modifier.horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                OutlinedButton(
-                    onClick = onEditClick,
-                    enabled = !isBusy,
-                ) {
-                    Icon(Icons.Outlined.Edit, contentDescription = null)
-                    Spacer(Modifier.width(6.dp))
-                    Text("Editar")
-                }
-
-                Button(
-                    onClick = onToggleActiveClick,
-                    enabled = !isBusy,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (routine.active) LeafOnColors.TextSecondary else LeafOnColors.GreenPrimary,
-                        contentColor = LeafOnColors.TextOnDark,
-                    ),
-                ) {
-                    Icon(
-                        imageVector = if (routine.active) Icons.Outlined.ToggleOff else Icons.Outlined.ToggleOn,
-                        contentDescription = null,
-                    )
-                    Spacer(Modifier.width(6.dp))
-                    Text(if (routine.active) "Desativar" else "Ativar")
-                }
-
                 OutlinedButton(
                     onClick = onSimulateClick,
                     enabled = !isBusy,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(46.dp),
                 ) {
                     Icon(Icons.Outlined.PlayArrow, contentDescription = null)
                     Spacer(Modifier.width(6.dp))
@@ -159,6 +218,9 @@ fun RoutineCard(
                 OutlinedButton(
                     onClick = onDeleteClick,
                     enabled = !isBusy,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(46.dp),
                     colors = ButtonDefaults.outlinedButtonColors(
                         contentColor = LeafOnColors.Error,
                     ),
@@ -168,6 +230,58 @@ fun RoutineCard(
                     Text("Excluir")
                 }
             }
+        }
+        return
+    }
+
+    Row(
+        modifier = Modifier.horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        OutlinedButton(
+            onClick = onEditClick,
+            enabled = !isBusy,
+        ) {
+            Icon(Icons.Outlined.Edit, contentDescription = null)
+            Spacer(Modifier.width(6.dp))
+            Text("Editar")
+        }
+
+        Button(
+            onClick = onToggleActiveClick,
+            enabled = !isBusy,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = if (routine.active) LeafOnColors.TextSecondary else LeafOnColors.GreenPrimary,
+                contentColor = LeafOnColors.TextOnDark,
+            ),
+        ) {
+            Icon(
+                imageVector = if (routine.active) Icons.Outlined.ToggleOff else Icons.Outlined.ToggleOn,
+                contentDescription = null,
+            )
+            Spacer(Modifier.width(6.dp))
+            Text(if (routine.active) "Desativar" else "Ativar")
+        }
+
+        OutlinedButton(
+            onClick = onSimulateClick,
+            enabled = !isBusy,
+        ) {
+            Icon(Icons.Outlined.PlayArrow, contentDescription = null)
+            Spacer(Modifier.width(6.dp))
+            Text("Simular")
+        }
+
+        OutlinedButton(
+            onClick = onDeleteClick,
+            enabled = !isBusy,
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = LeafOnColors.Error,
+            ),
+        ) {
+            Icon(Icons.Outlined.Delete, contentDescription = null)
+            Spacer(Modifier.width(6.dp))
+            Text("Excluir")
         }
     }
 }

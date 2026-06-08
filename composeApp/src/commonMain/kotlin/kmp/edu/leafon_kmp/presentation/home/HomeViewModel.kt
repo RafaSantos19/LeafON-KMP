@@ -120,20 +120,29 @@ class HomeViewModel(
             try {
                 supervisorScope {
                     val latestTelemetryDeferred = async {
-                        telemetryRepository.getLatestTelemetry(smartPotId)
+                        runTelemetryRequest {
+                            telemetryRepository.getLatestTelemetry(smartPotId)
+                        }
                     }
                     val telemetryHistoryDeferred = async {
-                        telemetryRepository.getTelemetry(
-                            smartPotId = smartPotId,
-                            limit = MAX_DASHBOARD_TELEMETRY_POINTS,
-                        )
+                        runTelemetryRequest {
+                            telemetryRepository.getTelemetry(
+                                smartPotId = smartPotId,
+                                limit = MAX_DASHBOARD_TELEMETRY_POINTS,
+                            )
+                        }
                     }
 
+                    val latestResult = latestTelemetryDeferred.await()
+                    val historyResult = telemetryHistoryDeferred.await()
+                    val telemetryError = latestResult.exceptionOrNull()
+                        ?: historyResult.exceptionOrNull()
+
                     state = state.copy(
-                        latestTelemetry = latestTelemetryDeferred.await(),
-                        telemetryHistory = telemetryHistoryDeferred.await(),
+                        latestTelemetry = latestResult.getOrNull(),
+                        telemetryHistory = historyResult.getOrDefault(emptyList()),
                         isTelemetryLoading = false,
-                        telemetryErrorMessage = null,
+                        telemetryErrorMessage = telemetryError?.let(HomeErrorMapper::fromThrowable),
                     )
                 }
             } catch (throwable: CancellationException) {
@@ -160,6 +169,16 @@ class HomeViewModel(
             }
 
             else -> smartPots.first().id
+        }
+    }
+
+    private suspend fun <T> runTelemetryRequest(block: suspend () -> T): Result<T> {
+        return try {
+            Result.success(block())
+        } catch (throwable: CancellationException) {
+            throw throwable
+        } catch (throwable: Throwable) {
+            Result.failure(throwable)
         }
     }
 

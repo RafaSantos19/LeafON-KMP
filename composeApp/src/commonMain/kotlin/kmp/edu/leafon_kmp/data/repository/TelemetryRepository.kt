@@ -1,5 +1,7 @@
 package kmp.edu.leafon_kmp.data.repository
 
+import kmp.edu.leafon_kmp.core.bluetooth.BluetoothTelemetryReading
+import kmp.edu.leafon_kmp.core.model.LatestTelemetryReading
 import kmp.edu.leafon_kmp.core.model.TelemetryReading
 
 interface TelemetryRepository {
@@ -16,5 +18,10 @@ interface TelemetryRepository {
         limit: Int? = null,
     ): List<TelemetryReading>
 
-    suspend fun getLatestTelemetry(smartPotId: String): TelemetryReading?
+    suspend fun getLatestTelemetry(smartPotId: String): LatestTelemetryReading?
+
+    suspend fun syncBluetoothTelemetry(
+        smartPotId: String,
+        reading: BluetoothTelemetryReading,
+    )
 }

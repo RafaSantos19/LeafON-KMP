@@ -3,6 +3,7 @@ package kmp.edu.leafon_kmp.presentation.pots.routines.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -61,80 +62,87 @@ fun RoutineFormContent(
     subtitle: String = "Defina quando a rotina deve executar no sistema.",
     submitLabel: String = "Salvar rotina",
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .widthIn(max = 620.dp)
-            .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(18.dp),
-    ) {
-        RoutineFormHeader(
-            title = title,
-            subtitle = subtitle,
-        )
+    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+        val compact = maxWidth < 420.dp
+        val contentPadding = if (compact) 0.dp else 24.dp
 
-        RoutineTypeSelector(
-            selectedType = type,
-            enabled = !isSaving && !isLoading,
-            onTypeChange = onTypeChange,
-        )
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .widthIn(max = 620.dp)
+                .padding(contentPadding),
+            verticalArrangement = Arrangement.spacedBy(if (compact) 16.dp else 18.dp),
+        ) {
+            RoutineFormHeader(
+                title = title,
+                subtitle = subtitle,
+            )
 
-        RoutineTextField(
-            label = "Nome da rotina",
-            value = name,
-            onValueChange = onNameChange,
-            placeholder = "Ex: Irrigacao da manha",
-            enabled = !isSaving && !isLoading,
-            keyboardOptions = KeyboardOptions(
-                capitalization = KeyboardCapitalization.Sentences,
-            ),
-        )
+            RoutineTypeSelector(
+                selectedType = type,
+                enabled = !isSaving && !isLoading,
+                compact = compact,
+                onTypeChange = onTypeChange,
+            )
 
-        RoutineTextField(
-            label = "Horario",
-            value = time,
-            onValueChange = onTimeChange,
-            placeholder = "Ex: 08:30:00",
-            enabled = !isSaving && !isLoading,
-            keyboardOptions = KeyboardOptions.Default,
-        )
+            RoutineTextField(
+                label = "Nome da rotina",
+                value = name,
+                onValueChange = onNameChange,
+                placeholder = "Ex: Irrigacao da manha",
+                enabled = !isSaving && !isLoading,
+                keyboardOptions = KeyboardOptions(
+                    capitalization = KeyboardCapitalization.Sentences,
+                ),
+            )
 
-        WeekDaySelector(
-            selectedDays = selectedDays,
-            enabled = !isSaving && !isLoading,
-            onToggleDay = onToggleDay,
-        )
+            RoutineTextField(
+                label = "Horario",
+                value = time,
+                onValueChange = onTimeChange,
+                placeholder = "Ex: 08:30:00",
+                enabled = !isSaving && !isLoading,
+                keyboardOptions = KeyboardOptions.Default,
+            )
 
-        RoutineTextField(
-            label = "Duracao em segundos",
-            value = durationInput,
-            onValueChange = onDurationChange,
-            placeholder = "Ex: 120",
-            enabled = !isSaving && !isLoading,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-        )
+            WeekDaySelector(
+                selectedDays = selectedDays,
+                enabled = !isSaving && !isLoading,
+                onToggleDay = onToggleDay,
+            )
 
-        ActiveToggle(
-            active = active,
-            controlsEnabled = !isSaving && !isLoading,
-            onToggleActive = onToggleActive,
-        )
+            RoutineTextField(
+                label = "Duracao em segundos",
+                value = durationInput,
+                onValueChange = onDurationChange,
+                placeholder = "Ex: 120",
+                enabled = !isSaving && !isLoading,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            )
 
-        if (errorMessage != null) {
-            Text(
-                text = errorMessage,
-                color = LeafOnColors.Error,
-                fontSize = 13.sp,
-                lineHeight = 18.sp,
+            ActiveToggle(
+                active = active,
+                controlsEnabled = !isSaving && !isLoading,
+                onToggleActive = onToggleActive,
+            )
+
+            if (errorMessage != null) {
+                Text(
+                    text = errorMessage,
+                    color = LeafOnColors.Error,
+                    fontSize = 13.sp,
+                    lineHeight = 18.sp,
+                )
+            }
+
+            RoutineFormActions(
+                isSaving = isSaving,
+                submitLabel = submitLabel,
+                compact = compact,
+                onSubmitClick = onSubmitClick,
+                onCancelClick = onCancelClick,
             )
         }
-
-        RoutineFormActions(
-            isSaving = isSaving,
-            submitLabel = submitLabel,
-            onSubmitClick = onSubmitClick,
-            onCancelClick = onCancelClick,
-        )
     }
 }
 
@@ -142,6 +150,7 @@ fun RoutineFormContent(
 private fun RoutineTypeSelector(
     selectedType: RoutineType,
     enabled: Boolean,
+    compact: Boolean,
     onTypeChange: (RoutineType) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -151,39 +160,71 @@ private fun RoutineTypeSelector(
             color = LeafOnColors.TextSecondary,
         )
 
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            RoutineType.entries
-                .filterNot { it == RoutineType.UNKNOWN }
-                .forEach { type ->
-                    val isSelected = type == selectedType
-                    Button(
-                        onClick = { onTypeChange(type) },
-                        enabled = enabled,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (isSelected) {
-                                LeafOnColors.GreenPrimary
-                            } else {
-                                LeafOnColors.BgMain
-                            },
-                            contentColor = if (isSelected) {
-                                LeafOnColors.TextOnDark
-                            } else {
-                                LeafOnColors.TextPrimary
-                            },
-                            disabledContainerColor = LeafOnColors.BgSecondary,
-                            disabledContentColor = LeafOnColors.TextSecondary,
-                        ),
-                    ) {
-                        Text(
-                            text = when (type) {
-                                RoutineType.IRRIGATION -> "Irrigacao"
-                                RoutineType.LIGHTING -> "Iluminacao"
-                                RoutineType.UNKNOWN -> "Desconhecido"
-                            },
+        if (compact) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                RoutineType.entries
+                    .filterNot { it == RoutineType.UNKNOWN }
+                    .forEach { type ->
+                        RoutineTypeButton(
+                            type = type,
+                            selected = type == selectedType,
+                            enabled = enabled,
+                            modifier = Modifier.fillMaxWidth(),
+                            onTypeChange = onTypeChange,
                         )
                     }
-                }
+            }
+        } else {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                RoutineType.entries
+                    .filterNot { it == RoutineType.UNKNOWN }
+                    .forEach { type ->
+                        RoutineTypeButton(
+                            type = type,
+                            selected = type == selectedType,
+                            enabled = enabled,
+                            onTypeChange = onTypeChange,
+                        )
+                    }
+            }
         }
+    }
+}
+
+@Composable
+private fun RoutineTypeButton(
+    type: RoutineType,
+    selected: Boolean,
+    enabled: Boolean,
+    onTypeChange: (RoutineType) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Button(
+        onClick = { onTypeChange(type) },
+        enabled = enabled,
+        modifier = modifier,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = if (selected) {
+                LeafOnColors.GreenPrimary
+            } else {
+                LeafOnColors.BgMain
+            },
+            contentColor = if (selected) {
+                LeafOnColors.TextOnDark
+            } else {
+                LeafOnColors.TextPrimary
+            },
+            disabledContainerColor = LeafOnColors.BgSecondary,
+            disabledContentColor = LeafOnColors.TextSecondary,
+        ),
+    ) {
+        Text(
+            text = when (type) {
+                RoutineType.IRRIGATION -> "Irrigacao"
+                RoutineType.LIGHTING -> "Iluminacao"
+                RoutineType.UNKNOWN -> "Desconhecido"
+            },
+        )
     }
 }
 
@@ -349,6 +390,7 @@ private fun ActiveToggle(
 private fun RoutineFormActions(
     isSaving: Boolean,
     submitLabel: String,
+    compact: Boolean,
     onSubmitClick: () -> Unit,
     onCancelClick: (() -> Unit)?,
 ) {
@@ -369,6 +411,46 @@ private fun RoutineFormActions(
                 isSaving = isSaving,
                 submitLabel = submitLabel,
             )
+        }
+        return
+    }
+
+    if (compact) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Button(
+                onClick = onSubmitClick,
+                enabled = !isSaving,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = LeafOnColors.GreenPrimary,
+                    contentColor = LeafOnColors.TextOnDark,
+                ),
+            ) {
+                RoutineSubmitContent(
+                    isSaving = isSaving,
+                    submitLabel = submitLabel,
+                )
+            }
+
+            OutlinedButton(
+                onClick = onCancelClick,
+                enabled = !isSaving,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                shape = RoundedCornerShape(8.dp),
+            ) {
+                Text(
+                    text = "Voltar",
+                    textAlign = TextAlign.Center,
+                )
+            }
         }
         return
     }

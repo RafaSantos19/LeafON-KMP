@@ -4,6 +4,7 @@ import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.auth.Auth
 import kmp.edu.leafon_kmp.core.auth.AuthRepository
 import kmp.edu.leafon_kmp.core.auth.SupabaseConfig
+import kmp.edu.leafon_kmp.core.bluetooth.createBluetoothTelemetryRepository
 import kmp.edu.leafon_kmp.core.network.ApiConfig
 import kmp.edu.leafon_kmp.core.network.HttpClientFactory
 import kmp.edu.leafon_kmp.core.network.InMemoryAuthTokenProvider
@@ -75,6 +76,7 @@ object AppDependencies {
         )
     }
     val telemetryRepositoryMemory: TelemetryRepository by lazy { TelemetryRepositoryMemory() }
+    val bluetoothTelemetryRepository by lazy { createBluetoothTelemetryRepository() }
     val remotoEmMemoria: RepositorioRemoto by lazy { RepositorioRemotoEmMemoria() }
     val remotoHttp: RepositorioRemoto by lazy {
         RepositorioRemotoHttp(

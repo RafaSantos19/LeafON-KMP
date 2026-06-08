@@ -1,5 +1,7 @@
 package kmp.edu.leafon_kmp.data.repository
 
+import kmp.edu.leafon_kmp.core.bluetooth.BluetoothTelemetryReading
+import kmp.edu.leafon_kmp.core.model.LatestTelemetryReading
 import kmp.edu.leafon_kmp.core.model.TelemetryReading
 import kmp.edu.leafon_kmp.core.network.ApiException
 
@@ -48,7 +50,23 @@ class TelemetryRepositoryMemory : TelemetryRepository {
             ?: readings.toList()
     }
 
-    override suspend fun getLatestTelemetry(smartPotId: String): TelemetryReading? {
-        return readingsByPotId[smartPotId]?.firstOrNull()
+    override suspend fun getLatestTelemetry(smartPotId: String): LatestTelemetryReading? {
+        return readingsByPotId[smartPotId]?.firstOrNull()?.let { reading ->
+            LatestTelemetryReading(
+                smartPotId = reading.smartPotId,
+                soilHumidity = reading.soilHumidity,
+                airHumidity = 0.0,
+                temperature = reading.temperature,
+                luminosityStatus = reading.luminosityStatus
+                    ?: reading.luminosity?.toString()
+                    ?: "Nao informado",
+                readAt = reading.readAt,
+            )
+        }
     }
+
+    override suspend fun syncBluetoothTelemetry(
+        smartPotId: String,
+        reading: BluetoothTelemetryReading,
+    ) = Unit
 }

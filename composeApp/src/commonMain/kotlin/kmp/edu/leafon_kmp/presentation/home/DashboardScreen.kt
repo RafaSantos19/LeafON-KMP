@@ -345,15 +345,22 @@ private fun MetricGrid(
             }
         }
     } else {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(20.dp),
-        ) {
-            metrics.forEach { metric ->
-                MetricCard(
-                    metric = metric,
-                    modifier = Modifier.weight(1f),
-                )
+        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            metrics.chunked(3).forEach { rowMetrics ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    rowMetrics.forEach { metric ->
+                        MetricCard(
+                            metric = metric,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    repeat(3 - rowMetrics.size) {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+                }
             }
         }
     }
@@ -366,6 +373,15 @@ private fun TelemetrySection(
     isCompact: Boolean,
 ) {
     val chartData = state.selectedChartData()
+    val soilHumidityValues = chartData
+        .map { it.soilHumidity.toFloat() }
+        .ifEmpty { state.latestTelemetry?.soilHumidity?.toFloat()?.let(::listOf).orEmpty() }
+    val airHumidityValues = chartData
+        .mapNotNull { it.airHumidity?.toFloat() }
+        .ifEmpty { state.latestTelemetry?.airHumidity?.toFloat()?.let(::listOf).orEmpty() }
+    val temperatureValues = chartData
+        .map { it.temperature.toFloat() }
+        .ifEmpty { state.latestTelemetry?.temperature?.toFloat()?.let(::listOf).orEmpty() }
     val emptyMessage = if (state.selectedSmartPotId == null) {
         "Selecione um vaso para ver o historico."
     } else {
@@ -427,23 +443,23 @@ private fun TelemetrySection(
 
         LineChartCard(
             title = "Umidade do solo",
-            values = chartData.map { it.soilHumidity.toFloat() },
+            values = soilHumidityValues,
             valueSuffix = "%",
             emptyMessage = emptyMessage,
         )
         LineChartCard(
+            title = "Umidade do ar",
+            values = airHumidityValues,
+            valueSuffix = "%",
+            emptyMessage = emptyMessage,
+            color = LeafOnColors.TextPrimary,
+        )
+        LineChartCard(
             title = "Temperatura",
-            values = chartData.map { it.temperature.toFloat() },
+            values = temperatureValues,
             valueSuffix = "°C",
             emptyMessage = emptyMessage,
             color = LeafOnColors.Warning,
-        )
-        LineChartCard(
-            title = "Luminosidade",
-            values = chartData.map { it.luminosity.toFloat() },
-            valueSuffix = " lux",
-            emptyMessage = emptyMessage,
-            color = LeafOnColors.TextPrimary,
         )
     }
 }
@@ -587,9 +603,14 @@ private fun HomeState.toMetrics(): List<MetricUi> {
             unit = if (latestTelemetry != null) "°C" else "",
         ),
         MetricUi(
-            label = "Luminosidade atual",
-            value = latestTelemetry?.luminosity?.format(1) ?: "--",
-            unit = if (latestTelemetry != null) "lux" else "",
+            label = "Umidade do ar",
+            value = latestTelemetry?.airHumidity?.format(1) ?: "--",
+            unit = if (latestTelemetry != null) "%" else "",
+        ),
+        MetricUi(
+            label = "Luminosidade",
+            value = latestTelemetry?.luminosityStatus ?: "--",
+            unit = "",
         ),
     )
 }

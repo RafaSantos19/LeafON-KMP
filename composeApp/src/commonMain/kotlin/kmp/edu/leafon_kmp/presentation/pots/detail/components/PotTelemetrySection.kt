@@ -12,7 +12,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Dns
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.LightMode
-import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Thermostat
 import androidx.compose.material.icons.outlined.WaterDrop
 import androidx.compose.material3.Card
@@ -31,15 +30,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kmp.edu.leafon_kmp.core.format.format
-import kmp.edu.leafon_kmp.core.model.TelemetryReading
+import kmp.edu.leafon_kmp.core.model.LatestTelemetryReading
 import kmp.edu.leafon_kmp.presentation.components.global.LeafOnColors
 
 @Composable
 fun PotTelemetrySection(
-    latestTelemetry: TelemetryReading?,
+    latestTelemetry: LatestTelemetryReading?,
     isTelemetryLoading: Boolean,
     telemetryErrorMessage: String?,
-    feedbackMessage: String?,
     humidityMin: Int?,
     deviceId: String?,
     modifier: Modifier = Modifier,
@@ -54,13 +52,6 @@ fun PotTelemetrySection(
             fontWeight = FontWeight.SemiBold,
             color = LeafOnColors.TextPrimary,
         )
-
-        if (feedbackMessage != null) {
-            TelemetryInfoCard(
-                message = feedbackMessage,
-                tint = LeafOnColors.Success,
-            )
-        }
 
         if (telemetryErrorMessage != null && latestTelemetry == null) {
             TelemetryInfoCard(
@@ -97,20 +88,20 @@ fun PotTelemetrySection(
             )
             TelemetryCard(
                 item = TelemetryItem(
-                    icon = Icons.Outlined.LightMode,
-                    label = "Luminosidade",
-                    value = latestTelemetry?.luminosity?.let { it.format(1) } ?: "-",
-                    helper = "Ultima leitura de luminosidade",
-                    tint = LeafOnColors.Warning,
+                    icon = Icons.Outlined.WaterDrop,
+                    label = "Umidade do ar",
+                    value = latestTelemetry?.airHumidity?.let { "${it.format(1)}%" } ?: "-",
+                    helper = "Umidade relativa do ambiente",
+                    tint = LeafOnColors.TextPrimary,
                 ),
             )
             TelemetryCard(
                 item = TelemetryItem(
-                    icon = Icons.Outlined.Schedule,
-                    label = "Read At",
-                    value = latestTelemetry?.readAt ?: "-",
-                    helper = "Timestamp retornado pela API",
-                    tint = LeafOnColors.TextSecondary,
+                    icon = Icons.Outlined.LightMode,
+                    label = "Luminosidade",
+                    value = latestTelemetry?.luminosityStatus ?: "-",
+                    helper = "Status informado pelo sensor",
+                    tint = LeafOnColors.Warning,
                 ),
             )
             TelemetryCard(

@@ -253,14 +253,20 @@ private fun RoutineListContent(
     onDeleteRequest: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 28.dp, vertical = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(22.dp),
-    ) {
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val isNarrow = maxWidth < 420.dp
+        val horizontalPadding = if (isNarrow) 16.dp else 28.dp
+        val verticalPadding = if (isNarrow) 18.dp else 24.dp
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = horizontalPadding, vertical = verticalPadding),
+            verticalArrangement = Arrangement.spacedBy(if (isNarrow) 18.dp else 22.dp),
+        ) {
         RoutineListHeader(
+            compact = isNarrow,
             onBackClick = onBackClick,
             onCreateClick = {
                 onAction(RoutineListAction.OnCreateRoutineClick)
@@ -326,15 +332,17 @@ private fun RoutineListContent(
             }
         }
     }
+    }
 }
 
 @Composable
 private fun RoutineListHeader(
+    compact: Boolean,
     onBackClick: () -> Unit,
     onCreateClick: () -> Unit,
 ) {
     BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-        if (maxWidth >= 640.dp) {
+        if (!compact && maxWidth >= 640.dp) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -342,6 +350,7 @@ private fun RoutineListHeader(
             ) {
                 RoutineListTitle(modifier = Modifier.weight(1f))
                 HeaderActions(
+                    compact = false,
                     onBackClick = onBackClick,
                     onCreateClick = onCreateClick,
                 )
@@ -350,6 +359,7 @@ private fun RoutineListHeader(
             Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 RoutineListTitle()
                 HeaderActions(
+                    compact = compact,
                     onBackClick = onBackClick,
                     onCreateClick = onCreateClick,
                 )
@@ -380,9 +390,37 @@ private fun RoutineListTitle(modifier: Modifier = Modifier) {
 
 @Composable
 private fun HeaderActions(
+    compact: Boolean,
     onBackClick: () -> Unit,
     onCreateClick: () -> Unit,
 ) {
+    if (compact) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Button(
+                onClick = onCreateClick,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = LeafOnColors.GreenPrimary,
+                    contentColor = LeafOnColors.TextOnDark,
+                ),
+            ) {
+                Text("Nova rotina")
+            }
+            OutlinedButton(
+                onClick = onBackClick,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(8.dp),
+            ) {
+                Text("Voltar")
+            }
+        }
+        return
+    }
+
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         OutlinedButton(
             onClick = onBackClick,

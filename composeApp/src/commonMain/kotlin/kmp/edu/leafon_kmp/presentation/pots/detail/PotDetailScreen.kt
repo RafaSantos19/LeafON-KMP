@@ -38,6 +38,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kmp.edu.leafon_kmp.data.repository.TelemetryRepository
 import kmp.edu.leafon_kmp.data.repository.TelemetryRepositoryMemory
+import kmp.edu.leafon_kmp.core.bluetooth.BluetoothTelemetryRepository
+import kmp.edu.leafon_kmp.core.bluetooth.NoOpBluetoothTelemetryRepository
 import kmp.edu.leafon_kmp.data.repository.SmartPotRepository
 import kmp.edu.leafon_kmp.data.repository.SmartPotRepositoryMemory
 import kmp.edu.leafon_kmp.presentation.components.global.LeafOnColors
@@ -48,12 +50,15 @@ import kmp.edu.leafon_kmp.presentation.components.layout.SidebarDestination
 import kmp.edu.leafon_kmp.presentation.pots.detail.components.PotDetailHeader
 import kmp.edu.leafon_kmp.presentation.pots.detail.components.PotQuickActions
 import kmp.edu.leafon_kmp.presentation.pots.detail.components.PotTelemetrySection
+import kmp.edu.leafon_kmp.presentation.pots.detail.components.BluetoothTelemetrySection
 
 @Composable
 fun PotDetailScreen(
     potId: String,
     smartPotRepository: SmartPotRepository = SmartPotRepositoryMemory(),
     telemetryRepository: TelemetryRepository = TelemetryRepositoryMemory(),
+    bluetoothTelemetryRepository: BluetoothTelemetryRepository =
+        NoOpBluetoothTelemetryRepository(),
     onBackClick: () -> Unit,
     onEditClick: (String) -> Unit,
     onDeleteSuccess: () -> Unit,
@@ -67,11 +72,17 @@ fun PotDetailScreen(
     modifier: Modifier = Modifier,
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
-    val viewModel = remember(potId, smartPotRepository, telemetryRepository) {
+    val viewModel = remember(
+        potId,
+        smartPotRepository,
+        telemetryRepository,
+        bluetoothTelemetryRepository,
+    ) {
         PotDetailViewModel(
             potId = potId,
             smartPotRepository = smartPotRepository,
             telemetryRepository = telemetryRepository,
+            bluetoothTelemetryRepository = bluetoothTelemetryRepository,
         )
     }
 
@@ -262,9 +273,34 @@ private fun PotDetailLoadedContent(
             latestTelemetry = state.latestTelemetry,
             isTelemetryLoading = state.isTelemetryLoading,
             telemetryErrorMessage = state.telemetryErrorMessage,
-            feedbackMessage = state.feedbackMessage,
             humidityMin = state.humidityMin,
             deviceId = state.deviceId,
+        )
+
+        BluetoothTelemetrySection(
+            devices = state.pairedBluetoothDevices,
+            selectedAddress = state.selectedBluetoothAddress,
+            connectionStatus = state.bluetoothConnectionStatus,
+            latestReading = state.latestBluetoothReading,
+            isLoadingDevices = state.isLoadingBluetoothDevices,
+            isSyncing = state.isSyncingBluetoothTelemetry,
+            errorMessage = state.bluetoothErrorMessage,
+            feedbackMessage = state.bluetoothFeedbackMessage,
+            onDeviceSelected = {
+                onAction(PotDetailAction.OnBluetoothDeviceSelected(it))
+            },
+            onReloadDevices = {
+                onAction(PotDetailAction.OnReloadBluetoothDevices)
+            },
+            onConnect = {
+                onAction(PotDetailAction.OnConnectBluetoothClick)
+            },
+            onDisconnect = {
+                onAction(PotDetailAction.OnDisconnectBluetoothClick)
+            },
+            onSync = {
+                onAction(PotDetailAction.OnSyncBluetoothTelemetryClick)
+            },
         )
 
         PotQuickActions(
@@ -273,9 +309,6 @@ private fun PotDetailLoadedContent(
                 onEditClick(state.potId)
             },
             onDeleteClick = onDeleteClick,
-            onGenerateTelemetryClick = {
-                onAction(PotDetailAction.OnGenerateTelemetryClick)
-            },
             onViewRoutinesClick = {
                 onAction(PotDetailAction.OnViewRoutinesClick)
                 onViewRoutinesClick(state.potId)
@@ -285,7 +318,6 @@ private fun PotDetailLoadedContent(
                 onViewAlertsClick(state.potId)
             },
             isDeleting = state.isDeleting,
-            isSendingTelemetry = state.isSendingTelemetry,
         )
     }
 }

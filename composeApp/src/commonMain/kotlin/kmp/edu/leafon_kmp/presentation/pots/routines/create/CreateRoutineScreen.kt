@@ -1,6 +1,8 @@
 package kmp.edu.leafon_kmp.presentation.pots.routines.create
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -195,52 +197,60 @@ private fun CreateRoutineContent(
             modifier = modifier,
         )
 
-        else -> Box(
-            modifier = modifier
-                .fillMaxSize()
-                .padding(horizontal = 24.dp, vertical = 28.dp),
-            contentAlignment = Alignment.TopCenter,
-        ) {
-            RoutineFormContent(
-                type = state.type,
-                name = state.name,
-                time = state.time,
-                selectedDays = state.selectedDays,
-                durationInput = state.durationInput,
-                active = state.active,
-                isLoading = state.isLoading,
-                isSaving = state.isSaving,
-                errorMessage = state.errorMessage,
-                onTypeChange = { value ->
-                    onAction(CreateRoutineAction.OnTypeChange(value))
-                },
-                onNameChange = { value ->
-                    onAction(CreateRoutineAction.OnNameChange(value))
-                },
-                onTimeChange = { value ->
-                    onAction(CreateRoutineAction.OnTimeChange(value))
-                },
-                onToggleDay = { day ->
-                    onAction(CreateRoutineAction.OnToggleDay(day))
-                },
-                onDurationChange = { value ->
-                    onAction(CreateRoutineAction.OnDurationChange(value))
-                },
-                onToggleActive = {
-                    onAction(CreateRoutineAction.OnToggleEnabled)
-                },
-                onSubmitClick = {
-                    onAction(CreateRoutineAction.OnSaveClick)
-                },
-                onCancelClick = onBackClick,
-                title = if (state.isEditMode) "Editar rotina" else "Nova rotina",
-                subtitle = if (state.isEditMode) {
-                    "Atualize configuracoes logicas da rotina sem acionar hardware fisico."
-                } else {
-                    "Crie uma rotina logica associada a este Smart Pot."
-                },
-                submitLabel = if (state.isEditMode) "Salvar alteracoes" else "Salvar rotina",
-            )
+        else -> BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+            val compact = maxWidth < 420.dp
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(
+                        horizontal = if (compact) 16.dp else 24.dp,
+                        vertical = if (compact) 18.dp else 28.dp,
+                    ),
+                contentAlignment = Alignment.TopCenter,
+            ) {
+                RoutineFormContent(
+                    type = state.type,
+                    name = state.name,
+                    time = state.time,
+                    selectedDays = state.selectedDays,
+                    durationInput = state.durationInput,
+                    active = state.active,
+                    isLoading = state.isLoading,
+                    isSaving = state.isSaving,
+                    errorMessage = state.errorMessage,
+                    onTypeChange = { value ->
+                        onAction(CreateRoutineAction.OnTypeChange(value))
+                    },
+                    onNameChange = { value ->
+                        onAction(CreateRoutineAction.OnNameChange(value))
+                    },
+                    onTimeChange = { value ->
+                        onAction(CreateRoutineAction.OnTimeChange(value))
+                    },
+                    onToggleDay = { day ->
+                        onAction(CreateRoutineAction.OnToggleDay(day))
+                    },
+                    onDurationChange = { value ->
+                        onAction(CreateRoutineAction.OnDurationChange(value))
+                    },
+                    onToggleActive = {
+                        onAction(CreateRoutineAction.OnToggleEnabled)
+                    },
+                    onSubmitClick = {
+                        onAction(CreateRoutineAction.OnSaveClick)
+                    },
+                    onCancelClick = onBackClick,
+                    title = if (state.isEditMode) "Editar rotina" else "Nova rotina",
+                    subtitle = if (state.isEditMode) {
+                        "Atualize configuracoes logicas da rotina sem acionar hardware fisico."
+                    } else {
+                        "Crie uma rotina logica associada a este Smart Pot."
+                    },
+                    submitLabel = if (state.isEditMode) "Salvar alteracoes" else "Salvar rotina",
+                )
+            }
         }
     }
 }

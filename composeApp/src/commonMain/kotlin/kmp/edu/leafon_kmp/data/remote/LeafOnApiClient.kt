@@ -26,7 +26,9 @@ import kmp.edu.leafon_kmp.data.remote.dto.CreateTelemetryRequestDto
 import kmp.edu.leafon_kmp.data.remote.dto.CreateUserRequestDto
 import kmp.edu.leafon_kmp.data.remote.dto.RoutineResponseDto
 import kmp.edu.leafon_kmp.data.remote.dto.SmartPotResponseDto
+import kmp.edu.leafon_kmp.data.remote.dto.LatestTelemetryResponseDto
 import kmp.edu.leafon_kmp.data.remote.dto.TelemetryResponseDto
+import kmp.edu.leafon_kmp.data.remote.dto.SyncBluetoothTelemetryRequestDto
 import kmp.edu.leafon_kmp.data.remote.dto.UpdateRoutineRequestDto
 import kmp.edu.leafon_kmp.data.remote.dto.UpdateSmartPotRequestDto
 import kmp.edu.leafon_kmp.data.remote.dto.UpdateUserRequestDto
@@ -189,6 +191,22 @@ class LeafOnApiClient(
         )
     }
 
+    suspend fun syncBluetoothTelemetry(
+        smartPotId: String,
+        request: SyncBluetoothTelemetryRequestDto,
+    ) {
+        requestUnit(
+            method = "POST",
+            path = "/telemetry?smartPotId=$smartPotId",
+            execute = {
+                post("/telemetry") {
+                    parameter("smartPotId", smartPotId)
+                    setBody(request)
+                }
+            },
+        )
+    }
+
     suspend fun getTelemetry(
         smartPotId: String,
         limit: Int? = null,
@@ -216,7 +234,7 @@ class LeafOnApiClient(
         }
     }
 
-    suspend fun getLatestTelemetry(smartPotId: String): TelemetryResponseDto? {
+    suspend fun getLatestTelemetry(smartPotId: String): LatestTelemetryResponseDto? {
         return requestJsonOrNullOn404(
             method = "GET",
             path = "/telemetry/latest?smartPotId=$smartPotId",
@@ -225,7 +243,7 @@ class LeafOnApiClient(
                     parameter("smartPotId", smartPotId)
                 }
             },
-            decode = { rawBody -> json.decodeFromString<TelemetryResponseDto>(rawBody) },
+            decode = { rawBody -> json.decodeFromString<LatestTelemetryResponseDto>(rawBody) },
         )
     }
 

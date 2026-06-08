@@ -10,7 +10,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.material.icons.outlined.Science
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Repeat
 import androidx.compose.material3.Button
@@ -28,11 +27,9 @@ import kmp.edu.leafon_kmp.presentation.components.global.LeafOnColors
 fun PotQuickActions(
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
-    onGenerateTelemetryClick: () -> Unit,
     onViewRoutinesClick: () -> Unit,
     onViewAlertsClick: () -> Unit,
     isDeleting: Boolean,
-    isSendingTelemetry: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -61,12 +58,6 @@ fun PotQuickActions(
                         enabled = !isDeleting,
                         modifier = Modifier.weight(1f),
                     )
-                    GenerateTelemetryActionButton(
-                        onClick = onGenerateTelemetryClick,
-                        enabled = !isDeleting && !isSendingTelemetry,
-                        isSendingTelemetry = isSendingTelemetry,
-                        modifier = Modifier.weight(1f),
-                    )
                     RoutinesActionButton(
                         onClick = onViewRoutinesClick,
                         enabled = !isDeleting,
@@ -85,11 +76,6 @@ fun PotQuickActions(
                 ) {
                     EditActionButton(onClick = onEditClick, enabled = !isDeleting)
                     DeleteActionButton(onClick = onDeleteClick, enabled = !isDeleting)
-                    GenerateTelemetryActionButton(
-                        onClick = onGenerateTelemetryClick,
-                        enabled = !isDeleting && !isSendingTelemetry,
-                        isSendingTelemetry = isSendingTelemetry,
-                    )
                     RoutinesActionButton(onClick = onViewRoutinesClick, enabled = !isDeleting)
                     AlertsActionButton(onClick = onViewAlertsClick, enabled = !isDeleting)
                 }
@@ -147,32 +133,6 @@ private fun DeleteActionButton(
             contentDescription = null,
         )
         Text(if (enabled) "Excluir vaso" else "Excluindo...")
-    }
-}
-
-@Composable
-private fun GenerateTelemetryActionButton(
-    onClick: () -> Unit,
-    enabled: Boolean,
-    isSendingTelemetry: Boolean,
-    modifier: Modifier = Modifier,
-) {
-    OutlinedButton(
-        onClick = onClick,
-        enabled = enabled,
-        modifier = modifier
-            .fillMaxWidth()
-            .heightIn(min = 46.dp),
-        shape = RoundedCornerShape(8.dp),
-        colors = ButtonDefaults.outlinedButtonColors(
-            contentColor = LeafOnColors.Warning,
-        ),
-    ) {
-        Icon(
-            imageVector = Icons.Outlined.Science,
-            contentDescription = null,
-        )
-        Text(if (isSendingTelemetry) "Enviando leitura..." else "Gerar leitura de teste")
     }
 }
 

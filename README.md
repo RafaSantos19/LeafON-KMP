@@ -37,6 +37,7 @@ Funcionalidades implementadas:
 - Marcacao de alertas como lidos
 - CRUD real de rotinas
 - Dashboard Home com dados reais e graficos simples em `Canvas`
+- Bluetooth Classic no Android para receber telemetria de modulos HC-05/ZS-040
 
 Ao carregar a Home, o app consulta vasos e alertas nao lidos e, para o vaso
 selecionado, busca a leitura mais recente e no maximo 30 pontos do historico.
@@ -139,6 +140,10 @@ Telemetria:
 - `GET /telemetry?smartPotId=<id>`
 - `GET /telemetry/latest?smartPotId=<id>`
 
+O endpoint de ultima telemetria retorna um resumo com `soilHumidity`,
+`airHumidity`, `temperature` e `luminosityStatus`. O timestamp `readAt` e
+opcional.
+
 Alertas:
 - `GET /alerts`
 - `GET /alerts/unread`
@@ -199,6 +204,27 @@ Tambem e possivel trocar a base URL em runtime via `AppDependencies.atualizarBas
 
 ### Android
 
+Antes de abrir o detalhe de um Smart Pot, pareie o HC-05/ZS-040 nas
+configuracoes Bluetooth do Android. Em Android 12 ou superior, aceite a
+permissao de dispositivos proximos solicitada pelo app.
+
+O modulo deve enviar uma leitura JSON por linha:
+
+```json
+{
+  "soilHumidity": 92,
+  "soilHumidityRaw": 352,
+  "airHumidity": 68.4,
+  "temperature": 21.4,
+  "luminosityStatus": "CLARO",
+  "luminosityDigital": 0
+}
+```
+
+No detalhe do vaso, selecione o dispositivo pareado, conecte e use
+`Sincronizar Telemetria` para enviar apenas a ultima leitura valida para
+`POST /telemetry?smartPotId=<id>`.
+
 Build debug:
 
 ```powershell
@@ -253,7 +279,7 @@ Compilacao completa usada nas ultimas entregas:
 
 ## Fluxos principais da UI
 
-- `Home`: dashboard com total de vasos, alertas nao lidos, ultima leitura e graficos de umidade, temperatura e luminosidade
+- `Home`: cards da leitura atual e graficos de umidade do solo, umidade do ar e temperatura; luminosidade e exibida como status
 - `Pots`: listagem, criacao, edicao, exclusao e detalhe do Smart Pot
 - `Pot Detail`: telemetria mais recente, acoes rapidas, acesso a rotinas e alertas do vaso
 - `Alerts`: lista global ou filtrada por `smartPotId`, com filtro de nao lidos

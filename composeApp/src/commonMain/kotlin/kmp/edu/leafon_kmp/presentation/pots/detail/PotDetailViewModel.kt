@@ -3,7 +3,9 @@ package kmp.edu.leafon_kmp.presentation.pots.detail
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import kmp.edu.leafon_kmp.core.time.IsoTimestampProvider
+import kmp.edu.leafon_kmp.core.bluetooth.BluetoothConnectionStatus
+import kmp.edu.leafon_kmp.core.bluetooth.BluetoothTelemetryRepository
+import kmp.edu.leafon_kmp.core.bluetooth.NoOpBluetoothTelemetryRepository
 import kmp.edu.leafon_kmp.data.repository.SmartPotRepository
 import kmp.edu.leafon_kmp.data.repository.SmartPotRepositoryMemory
 import kmp.edu.leafon_kmp.data.repository.TelemetryRepository
@@ -18,12 +20,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import kotlin.random.Random
 
 class PotDetailViewModel(
     private val potId: String,
     private val smartPotRepository: SmartPotRepository = SmartPotRepositoryMemory(),
     private val telemetryRepository: TelemetryRepository = TelemetryRepositoryMemory(),
+    private val bluetoothTelemetryRepository: BluetoothTelemetryRepository =
+        NoOpBluetoothTelemetryRepository(),
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -32,15 +35,27 @@ class PotDetailViewModel(
 
     init {
         loadPot()
+        observeBluetoothState()
+        loadPairedBluetoothDevices()
     }
 
     fun onAction(action: PotDetailAction) {
         when (action) {
             PotDetailAction.OnEditClick -> Unit
-            PotDetailAction.OnGenerateTelemetryClick -> generateFakeTelemetry()
             PotDetailAction.OnViewRoutinesClick -> Unit
             PotDetailAction.OnViewAlertsClick -> Unit
             PotDetailAction.OnRetryClick -> loadPot()
+            PotDetailAction.OnReloadBluetoothDevices -> loadPairedBluetoothDevices()
+            PotDetailAction.OnConnectBluetoothClick -> connectBluetooth()
+            PotDetailAction.OnDisconnectBluetoothClick -> disconnectBluetooth()
+            PotDetailAction.OnSyncBluetoothTelemetryClick -> syncBluetoothTelemetry()
+            is PotDetailAction.OnBluetoothDeviceSelected -> {
+                state = state.copy(
+                    selectedBluetoothAddress = action.address,
+                    bluetoothErrorMessage = null,
+                    bluetoothFeedbackMessage = null,
+                )
+            }
         }
     }
 
@@ -67,7 +82,11 @@ class PotDetailViewModel(
     }
 
     fun onCleared() {
-        scope.cancel()
+        scope.launch {
+            bluetoothTelemetryRepository.disconnect()
+        }.invokeOnCompletion {
+            scope.cancel()
+        }
     }
 
     private fun loadPot() {
@@ -77,7 +96,6 @@ class PotDetailViewModel(
                 isTelemetryLoading = true,
                 errorMessage = null,
                 telemetryErrorMessage = null,
-                feedbackMessage = null,
             )
 
             try {
@@ -123,77 +141,125 @@ class PotDetailViewModel(
         }
     }
 
-    private fun generateFakeTelemetry() {
-        val smartPotId = state.potId.trim()
-        val humidityMin = state.humidityMin
-
-        if (smartPotId.isBlank()) {
-            state = state.copy(
-                telemetryErrorMessage = "Vaso nao encontrado.",
-                feedbackMessage = null,
-            )
-            return
+    private fun observeBluetoothState() {
+        scope.launch {
+            bluetoothTelemetryRepository.connectionStatus.collect { status ->
+                state = state.copy(bluetoothConnectionStatus = status)
+            }
         }
+        scope.launch {
+            bluetoothTelemetryRepository.latestReading.collect { reading ->
+                state = state.copy(latestBluetoothReading = reading)
+            }
+        }
+        scope.launch {
+            bluetoothTelemetryRepository.errorMessage.collect { message ->
+                state = state.copy(bluetoothErrorMessage = message)
+            }
+        }
+    }
 
-        val soilHumidity = generateSoilHumidity(humidityMin)
-        val temperature = Random.nextDouble(from = 18.0, until = 35.0)
-        val luminosity = Random.nextDouble(from = 100.0, until = 1000.0)
-        val readAt = IsoTimestampProvider.nowUtc()
-
-        if (soilHumidity !in 0..100 || readAt.isBlank()) {
+    private fun loadPairedBluetoothDevices() {
+        scope.launch {
             state = state.copy(
-                telemetryErrorMessage = "Leitura invalida. Verifique os valores enviados.",
-                feedbackMessage = null,
+                isLoadingBluetoothDevices = true,
+                bluetoothErrorMessage = null,
+            )
+
+            try {
+                val devices = bluetoothTelemetryRepository.listPairedDevices()
+                val selectedAddress = state.selectedBluetoothAddress
+                    ?.takeIf { selected -> devices.any { it.address == selected } }
+                    ?: devices.firstOrNull()?.address
+
+                state = state.copy(
+                    pairedBluetoothDevices = devices,
+                    selectedBluetoothAddress = selectedAddress,
+                    isLoadingBluetoothDevices = false,
+                )
+            } catch (throwable: CancellationException) {
+                throw throwable
+            } catch (throwable: Throwable) {
+                state = state.copy(
+                    isLoadingBluetoothDevices = false,
+                    bluetoothErrorMessage = throwable.message
+                        ?: "Nao foi possivel listar dispositivos Bluetooth pareados.",
+                )
+            }
+        }
+    }
+
+    private fun connectBluetooth() {
+        val address = state.selectedBluetoothAddress
+        if (address.isNullOrBlank()) {
+            state = state.copy(
+                bluetoothErrorMessage = "Selecione um dispositivo Bluetooth pareado.",
+                bluetoothFeedbackMessage = null,
             )
             return
         }
 
         scope.launch {
             state = state.copy(
-                isSendingTelemetry = true,
-                telemetryErrorMessage = null,
-                feedbackMessage = null,
+                bluetoothErrorMessage = null,
+                bluetoothFeedbackMessage = null,
+            )
+            bluetoothTelemetryRepository.connect(address)
+        }
+    }
+
+    private fun disconnectBluetooth() {
+        scope.launch {
+            bluetoothTelemetryRepository.disconnect()
+            state = state.copy(bluetoothFeedbackMessage = "Bluetooth desconectado.")
+        }
+    }
+
+    private fun syncBluetoothTelemetry() {
+        val reading = state.latestBluetoothReading
+        if (reading == null) {
+            state = state.copy(
+                bluetoothErrorMessage = "Nenhuma leitura Bluetooth valida recebida.",
+                bluetoothFeedbackMessage = null,
+            )
+            return
+        }
+
+        if (potId.isBlank()) {
+            state = state.copy(
+                bluetoothErrorMessage = "Smart Pot invalido para sincronizacao.",
+                bluetoothFeedbackMessage = null,
+            )
+            return
+        }
+
+        scope.launch {
+            state = state.copy(
+                isSyncingBluetoothTelemetry = true,
+                bluetoothErrorMessage = null,
+                bluetoothFeedbackMessage = null,
             )
 
             try {
-                val created = telemetryRepository.createTelemetry(
-                    smartPotId = smartPotId,
-                    soilHumidity = soilHumidity,
-                    temperature = temperature,
-                    luminosity = luminosity,
-                    readAt = readAt,
+                telemetryRepository.syncBluetoothTelemetry(
+                    smartPotId = potId,
+                    reading = reading,
                 )
-
                 state = state.copy(
-                    isSendingTelemetry = false,
-                    latestTelemetry = created,
-                    telemetryErrorMessage = null,
-                    feedbackMessage = "Leitura de teste enviada com sucesso.",
+                    isSyncingBluetoothTelemetry = false,
+                    bluetoothFeedbackMessage = "Telemetria sincronizada com sucesso.",
                 )
             } catch (throwable: CancellationException) {
                 throw throwable
             } catch (throwable: Throwable) {
                 state = state.copy(
-                    isSendingTelemetry = false,
-                    telemetryErrorMessage = TelemetryErrorMapper.fromThrowable(
+                    isSyncingBluetoothTelemetry = false,
+                    bluetoothErrorMessage = TelemetryErrorMapper.fromThrowable(
                         throwable = throwable,
                         operation = TelemetryOperation.CREATE,
                     ),
-                    feedbackMessage = null,
                 )
             }
         }
-    }
-
-    private fun generateSoilHumidity(humidityMin: Int?): Int {
-        val threshold = humidityMin ?: 40
-        val shouldGoBelowThreshold = Random.nextBoolean()
-        val normalizedThreshold = threshold.coerceIn(0, 100)
-
-        return if (shouldGoBelowThreshold) {
-            Random.nextInt(from = 0, until = (normalizedThreshold + 1).coerceAtMost(101))
-        } else {
-            Random.nextInt(from = normalizedThreshold, until = 101)
-        }.coerceIn(0, 100)
     }
 }

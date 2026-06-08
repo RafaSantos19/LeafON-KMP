@@ -181,6 +181,8 @@ fun App() {
                             potId = potId,
                             smartPotRepository = smartPotRepository,
                             telemetryRepository = telemetryRepository,
+                            bluetoothTelemetryRepository =
+                                AppDependencies.bluetoothTelemetryRepository,
                             onBackClick = navigator::goBackOrPots,
                             onEditClick = navigator::goToEditPot,
                             onDeleteSuccess = {

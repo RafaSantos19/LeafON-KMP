@@ -1,9 +1,12 @@
 package kmp.edu.leafon_kmp.data.repository
 
+import kmp.edu.leafon_kmp.core.bluetooth.BluetoothTelemetryReading
+import kmp.edu.leafon_kmp.core.model.LatestTelemetryReading
 import kmp.edu.leafon_kmp.core.model.TelemetryReading
 import kmp.edu.leafon_kmp.data.mapper.toDomain
 import kmp.edu.leafon_kmp.data.remote.LeafOnApiClient
 import kmp.edu.leafon_kmp.data.remote.dto.CreateTelemetryRequestDto
+import kmp.edu.leafon_kmp.data.remote.dto.toSyncRequest
 
 class TelemetryRepositoryHttp(
     private val apiClient: LeafOnApiClient,
@@ -34,10 +37,24 @@ class TelemetryRepositoryHttp(
         return apiClient.getTelemetry(
             smartPotId = smartPotId,
             limit = limit,
-        ).map { it.toDomain() }
+        ).mapNotNull { response ->
+            runCatching {
+                response.toDomain(smartPotIdFallback = smartPotId)
+            }.getOrNull()
+        }
     }
 
-    override suspend fun getLatestTelemetry(smartPotId: String): TelemetryReading? {
-        return apiClient.getLatestTelemetry(smartPotId)?.toDomain()
+    override suspend fun getLatestTelemetry(smartPotId: String): LatestTelemetryReading? {
+        return apiClient.getLatestTelemetry(smartPotId)?.toDomain(smartPotId)
+    }
+
+    override suspend fun syncBluetoothTelemetry(
+        smartPotId: String,
+        reading: BluetoothTelemetryReading,
+    ) {
+        apiClient.syncBluetoothTelemetry(
+            smartPotId = smartPotId,
+            request = reading.toSyncRequest(),
+        )
     }
 }

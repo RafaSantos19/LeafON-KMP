@@ -13,7 +13,6 @@ class TelemetryMappersTest {
             id = "reading-1",
             smartPotId = "pot-1",
             soilHumidity = 42,
-            temperature = 24.5,
         )
 
         assertFailsWith<ApiException> {
